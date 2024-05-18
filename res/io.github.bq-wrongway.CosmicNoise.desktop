@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=CosmicNoise
+Comment=Applet to play background relaxing background noise
+Type=Application
+Exec=cosmic-noise
+Terminal=false
+Categories=Cosmic;Iced;
+Keywords=Cosmic;Iced;
+# Translators: Do NOT translate or transliterate this text (this is an icon file name)!
+Icon=com.system76.CosmicAppletDesktop-symbolic
+StartupNotify=true
+NoDisplay=true
+X-CosmicApplet=true
+X-CosmicHoverPopup=Start

@@ -4,6 +4,7 @@ use app::YourApp;
 /// The `app` module is used by convention to indicate the main component of our application.
 mod app;
 mod core;
+mod files;
 
 /// The `cosmic::app::run()` function is the starting point of your application.
 /// It takes two arguments:
@@ -12,5 +13,5 @@ mod core;
 ///  If your app does not need any flags, you can pass in `()`.
 fn main() -> cosmic::iced::Result {
     let settings = cosmic::app::Settings::default();
-    cosmic::app::run::<YourApp>(settings, ())
+    cosmic::applet::run::<YourApp>(true, ())
 }

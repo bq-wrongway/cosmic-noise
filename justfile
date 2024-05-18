@@ -1,5 +1,5 @@
-name := 'cosmic-app-template'
-export APPID := 'com.example.CosmicAppTemplate'
+name := 'cosmic-noise'
+export APPID := 'io.github.bq-wrongway.CosmicNoise'
 
 rootdir := ''
 prefix := '/usr'
