@@ -1,2 +1,1 @@
-app-title = COSMIC App Template
-welcome = Welcome to COSMIC! ✨
+app-title = COSMIC Noise
