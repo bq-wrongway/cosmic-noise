@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
+
 use crate::files::{self, NoiseTrack};
 use crate::fl;
 use cosmic::app::{Command, Core};
@@ -26,35 +27,19 @@ const LINEAR_TWEEN: Tween = Tween {
     start_time: StartTime::Immediate,
 };
 
-/// This is the struct that represents your application.
-/// It is used to define the data that will be used by your application.
-// #[derive(Clone, Default)]
 pub struct CosmicNoise {
-    /// This is the core of your application, it is used to communicate with the Cosmic runtime.
-    /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
     manager: AudioManager,
     files: Vec<NoiseTrack>,
     currently_playing: HashMap<usize, StreamingSoundHandle<FromFileError>>,
 }
 
-/// This is the enum that contains all the possible variants that your application will need to transmit messages.
-/// This is used to communicate between the different parts of your application.
-/// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
     Play(usize),
     VolumeChanged((f32, usize)),
 }
 
-/// Implement the `Application` trait for your application.
-/// This is where you define the behavior of your application.
-///
-/// The `Application` trait requires you to define the following types and constants:
-/// - `Executor` is the executor that will be used to run your application.
-/// - `Flags` is the data that your application needs to use before it starts.
-/// - `Message` is the enum that contains all the possible variants that your application will need to transmit messages.
-/// - `APP_ID` is the unique identifier of your application.
 impl Application for CosmicNoise {
     type Executor = cosmic::executor::Default;
 
@@ -72,18 +57,10 @@ impl Application for CosmicNoise {
         &mut self.core
     }
 
-    /// This is the header of your application, it can be used to display the title of your application.
     fn header_center(&self) -> Vec<Element<Self::Message>> {
         vec![widget::text::heading(fl!("app-title")).into()]
     }
 
-    /// This is the entry point of your application, it is where you initialize your application.
-    ///
-    /// Any work that needs to be done before the application starts should be done here.
-    ///
-    /// - `core` is used to passed on for you by libcosmic to use in the core of your own application.
-    /// - `flags` is used to pass in any data that your application needs to use before it starts.
-    /// - `Command` type is used to send messages to your application. `Command::none()` can be used to send no messages to your application.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let example = CosmicNoise {
             core,
@@ -196,12 +173,12 @@ fn uppercase_first(data: &str) -> String {
     result
 }
 
-fn get_elements(files: &Vec<NoiseTrack>) -> Vec<Element<Message>> {
+fn get_elements(files: &[NoiseTrack]) -> Vec<Element<Message>> {
     let mut new_vec = vec![];
     for (i, t) in files.iter().enumerate() {
         new_vec.push(
             mouse_area(
-                container(get_component(&t, i))
+                container(get_component(t, i))
                     .width(150.0)
                     .height(75.0)
                     .style(if t.is_playing {
