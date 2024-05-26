@@ -1,15 +1,19 @@
-// SPDX-License-Identifier: GPL-3.0-only
-use crate::files::{self, NoiseTrack};
-use crate::fl;
+use std::collections::HashMap;
+use std::path::Path;
+use std::time::Duration;
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::{Length, Limits};
+use cosmic::iced::{Alignment, Length, Limits};
+use cosmic::iced_core::Padding;
 use cosmic::iced_runtime::window::Id;
 use cosmic::iced_sctk::commands::popup::{destroy_popup, get_popup};
 use cosmic::iced_style::application;
-use cosmic::iced_widget::scrollable;
-use cosmic::widget::{container, flex_row, horizontal_space, mouse_area, slider, Column, Row};
+use cosmic::iced_widget::{row, scrollable, text};
+use cosmic::widget::{
+    button, container, flex_row, horizontal_space, mouse_area, slider, Column, Row,
+};
 use cosmic::{widget, Application, Element, Theme};
+use kira::sound::PlaybackPosition;
 use kira::{
     manager::{backend::DefaultBackend, AudioManager, AudioManagerSettings},
     sound::{
@@ -19,9 +23,11 @@ use kira::{
     tween::{Easing, Tween},
     StartTime,
 };
-use std::collections::HashMap;
-use std::path::Path;
-use std::time::Duration;
+
+// SPDX-License-Identifier: GPL-3.0-only
+use crate::files::{self, NoiseTrack};
+use crate::fl;
+
 const PADDING: f32 = 20.0;
 const SPACING: f32 = 10.0;
 const MIN_WIDTH: f32 = 200.0;
@@ -32,47 +38,36 @@ const LINEAR_TWEEN: Tween = Tween {
     start_time: StartTime::Immediate,
 };
 
-const ID: &str = "io.github.bq-wrongway.CosmicNoise";
-/// This is the struct that represents your application.
-/// It is used to define the data that will be used by your application.
+// const ID: &str = "io.github.bq-wrongway.CosmicNoise";
 // #[derive(Clone, Default)]
-pub struct YourApp {
-    /// This is the core of your application, it is used to communicate with the Cosmic runtime.
-    /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
+pub struct CosmicNoise {
     core: Core,
     popup: Option<Id>,
     manager: AudioManager,
     files: Vec<NoiseTrack>,
     currently_playing: HashMap<usize, StreamingSoundHandle<FromFileError>>,
+    state: PlaybackState,
+    error: Option<Error>,
 }
 
-/// This is the enum that contains all the possible variants that your application will need to transmit messages.
-/// This is used to communicate between the different parts of your application.
-/// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
     TogglePopup,
     PopupClosed(Id),
     Play(usize),
     VolumeChanged((f32, usize)),
+    StopAll,
+    PauseAll,
+    ResumeAll,
 }
-
-/// Implement the `Application` trait for your application.
-/// This is where you define the behavior of your application.
-///
-/// The `Application` trait requires you to define the following types and constants:
-/// - `Executor` is the executor that will be used to run your application.
-/// - `Flags` is the data that your application needs to use before it starts.
-/// - `Message` is the enum that contains all the possible variants that your application will need to transmit messages.
-/// - `APP_ID` is the unique identifier of your application.
-impl Application for YourApp {
+impl Application for CosmicNoise {
     type Executor = cosmic::executor::Default;
 
     type Flags = ();
 
     type Message = Message;
 
-    const APP_ID: &'static str = "dev.wrongway.CosmicNoiseApplet";
+    const APP_ID: &'static str = "io.github.bq-wrongway.CosmicNoise";
 
     fn core(&self) -> &Core {
         &self.core
@@ -82,31 +77,25 @@ impl Application for YourApp {
         &mut self.core
     }
 
-    /// This is the header of your application, it can be used to display the title of your application.
     fn header_center(&self) -> Vec<Element<Self::Message>> {
         vec![widget::text::heading(fl!("app-title")).into()]
     }
 
-    /// This is the entry point of your application, it is where you initialize your application.
-    ///
-    /// Any work that needs to be done before the application starts should be done here.
-    ///
-    /// - `core` is used to passed on for you by libcosmic to use in the core of your own application.
-    /// - `flags` is used to pass in any data that your application needs to use before it starts.
-    /// - `Command` type is used to send messages to your application. `Command::none()` can be used to send no messages to your application.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let example = YourApp {
+        let cosmic_noise = CosmicNoise {
             core,
+            popup: None,
             manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
                 .ok()
                 .unwrap(),
             files: files::load_data(),
             currently_playing: HashMap::new(),
-            popup: None,
-            // ..Default::default()
+            state: PlaybackState::Stopped,
+            error: None,
+            // ..Default::default()batch
         };
 
-        (example, Command::none())
+        (cosmic_noise, Command::none())
     }
 
     fn update(
@@ -117,13 +106,22 @@ impl Application for YourApp {
             Message::Play(i) => match self.currently_playing.get_mut(&i) {
                 Some(h) => match h.state() {
                     PlaybackState::Playing => {
-                        self.files.get_mut(i).unwrap().is_playing = false;
                         h.pause(LINEAR_TWEEN);
+                        let cur_p = self.files.get_mut(i).unwrap();
+                        cur_p.state = PlaybackState::Paused;
+
+
                     }
 
+                    PlaybackState::Paused => {
+                        h.resume(Tween::default());
+                        self.files.get_mut(i).unwrap().state = PlaybackState::Playing;
+
+                    }
                     _ => {
-                        self.files.get_mut(i).unwrap().is_playing = true;
-                        h.resume(Tween::default())
+                        // h.resume(Tween::default());
+                        self.files.get_mut(i).unwrap().state = PlaybackState::Stopped;
+
                     }
                 },
                 None => {
@@ -135,8 +133,10 @@ impl Application for YourApp {
                         .manager
                         .play(sound_data.with_settings(settings))
                         .unwrap();
+
                     self.currently_playing.insert(i, handler);
-                    self.files.get_mut(i).unwrap().is_playing = true;
+                    self.files.get_mut(i).unwrap().state = PlaybackState::Playing;
+
                 }
             },
             Message::VolumeChanged(level) => {
@@ -176,33 +176,117 @@ impl Application for YourApp {
                     self.popup = None;
                 }
             }
+            Message::StopAll => {
+                if !&self.currently_playing.is_empty() {
+                    for (n, t) in &mut self.currently_playing {
+                        t.stop(Tween::default());
+                        self.files.get_mut(*n).unwrap().state = PlaybackState::Stopped;
+                    }
+                }
+                self.currently_playing.clear();
+                self.state = PlaybackState::Stopped;
+
+                println!("{:?}", self.currently_playing.is_empty());
+            }
+            Message::PauseAll => {
+                if !&self.currently_playing.is_empty() {
+                    self.currently_playing.iter_mut().for_each(|(_n, t)| {
+                        t.pause(Tween::default());
+                        // self.files.get_mut(*n).unwrap().is_playing = false;
+                    });
+                    self.state = PlaybackState::Paused;
+                }
+                println!("{:?}", self.currently_playing.is_empty());
+            }
+            Message::ResumeAll => {
+                if !&self.currently_playing.is_empty() {
+                    self.currently_playing.iter_mut().for_each(|(_n, t)| {
+                        t.resume(Tween::default());
+                        // self.files.get_mut(*n).unwrap().is_playing = false;
+                    });
+                    self.state = PlaybackState::Playing;
+                }
+                println!("{:?}", self.currently_playing.is_empty());
+            }
         }
         Command::none()
     }
 
-    /// This is the main view of your application, it is the root of your widget tree.
-    ///
-    /// The `Element` type is used to represent the visual elements of your application,
-    /// it has a `Message` associated with it, which dictates what type of message it can send.
-    ///
-    /// To get a better sense of which widgets are available, check out the `widget` module.
     fn view(&self) -> Element<Self::Message> {
+        // let path = Path::new("/home/melnibone/Documents/res/icons/cosmic_noise.png").to_path_buf();
+        // let hand_svg = cosmic::widget::icon::from_path(path);
         self.core
             .applet
-            .icon_button("display-symbolic")
+            .icon_button("io.github.bqwrongway.wave-symbolic")
             .on_press(Message::TogglePopup)
             .into()
     }
 
     fn view_window(&self, _id: Id) -> Element<Self::Message> {
+        //need to pay attention to flex row, since its inside of scrollable it might need to be wrapped by the container (no width/noheight settigns)
         let content = flex_row(get_elements(&self.files));
-        let main_cot = scrollable(container(content).width(500.0).height(400.0).padding(10.0))
+
+        let play_pause = row![
+            mouse_area(
+                container(cosmic::widget::icon::from_name(
+                    "io.github.bqwrongway.pause-symbolic",
+                ))
+                    .width(20)
+                    .padding(0)
+                    .style(cosmic::style::Container::Transparent)
+                    .height(20),
+            ).on_press(Message::PauseAll),
+
+            mouse_area(
+                container(cosmic::widget::icon::from_name(
+                    "io.github.bqwrongway.play-symbolic",
+                ))
+                    .width(20)
+                    .padding(0)
+                    .style(cosmic::style::Container::Transparent)
+                    .height(20),
+            ).on_press(Message::ResumeAll)
+
+        ];
+        let nav_row = Row::new()
+            .push(
+                mouse_area(
+                    container(cosmic::widget::icon::from_name(
+                        "io.github.bqwrongway.stop-symbolic",
+                    ))
+                    .width(20)
+                    .padding(0)
+                    .style(cosmic::style::Container::Transparent)
+                    .height(20),
+                )
+                .on_press(Message::StopAll),
+            )
+            .push(horizontal_space(Length::Fill))
+            .push(text("CosmicNoise"))
+            .push(horizontal_space(Length::Fill))
+            .push(play_pause)
+            .width(500.0)
+            .height(Length::Shrink).align_items(Alignment::Center);
+        let main_content = Column::new()
+            .push(nav_row)
+            .push(
+                container(scrollable(container(content).padding(Padding {
+                    top: 0.,
+                    right: 10.,
+                    bottom: 5.,
+                    left: 0.,
+                })))
+                .height(320)
+                .width(500),
+            )
+            .spacing(5)
             .width(480.0)
-            .height(400.);
+            .height(400.)
+            .padding(5);
 
         self.core
             .applet
-            .popup_container(main_cot)
+            .popup_container(main_content)
             .width(Length::Fixed(480.))
             .height(Length::Fixed(400.))
             .into()
@@ -262,10 +346,10 @@ fn get_elements(files: &Vec<NoiseTrack>) -> Vec<Element<Message>> {
                 container(get_component(&t, i))
                     .width(150.0)
                     .height(75.0)
-                    .style(if t.is_playing {
-                        cosmic::style::iced::Container::Secondary
-                    } else {
-                        cosmic::style::iced::Container::Primary
+                    .style(match t.state {
+                        PlaybackState::Playing => {cosmic::style::iced::Container::Secondary}
+                        PlaybackState::Paused => {cosmic::style::iced::Container::Secondary}
+                        _=> {cosmic::style::iced::Container::Primary}
                     })
                     .padding(4.),
             )
@@ -274,4 +358,11 @@ fn get_elements(files: &Vec<NoiseTrack>) -> Vec<Element<Message>> {
         )
     }
     new_vec
+}
+
+
+
+pub enum Error {
+    FileSystem,
+    PlayBack,
 }

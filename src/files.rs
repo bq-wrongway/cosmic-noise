@@ -1,10 +1,13 @@
 use std::{ffi::OsStr, path::Path};
 
+use kira::sound::PlaybackState;
+
 pub struct NoiseTrack {
     pub name: String,
     pub path: String,
     pub volume_level: f32,
     pub is_playing: bool,
+    pub state: PlaybackState,
 }
 pub fn get_stem(name: &Path) -> String {
     Path::file_stem(name).unwrap().to_str().unwrap().to_string()
@@ -14,7 +17,7 @@ pub fn load_data() -> Vec<NoiseTrack> {
     if !files.is_empty() {
         files.clear();
     }
-    for entry in walkdir::WalkDir::new("assets/sounds/") {
+    for entry in walkdir::WalkDir::new("/usr/bin/assets/sounds") {
         let entry = entry.unwrap();
         if entry.path().is_file() && entry.path().has_extension(&["mp3", "ogg", "flac", "wav"]) {
             files.push(NoiseTrack {
@@ -22,6 +25,7 @@ pub fn load_data() -> Vec<NoiseTrack> {
                 path: entry.path().to_str().unwrap().to_string(),
                 volume_level: 2.,
                 is_playing: false,
+                state: PlaybackState::Stopped,
             });
         }
     }

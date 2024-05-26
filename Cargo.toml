@@ -17,7 +17,7 @@ walkdir = "2.5.0"
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
 default-features = false
-features = ["dbus-config", "tokio","applet", "wayland", "wgpu"]
+features = ["dbus-config","multi-window", "tokio","applet", "wayland", "wgpu"]
 
 [dependencies.i18n-embed]
 version = "0.14"
