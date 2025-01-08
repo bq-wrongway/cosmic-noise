@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::path::Path;
-use std::time::Duration;
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{Alignment, Length, Limits};
@@ -9,11 +6,8 @@ use cosmic::iced_runtime::window::Id;
 use cosmic::iced_sctk::commands::popup::{destroy_popup, get_popup};
 use cosmic::iced_style::application;
 use cosmic::iced_widget::{row, scrollable, text};
-use cosmic::widget::{
-    button, container, flex_row, horizontal_space, mouse_area, slider, Column, Row,
-};
+use cosmic::widget::{container, flex_row, horizontal_space, mouse_area, slider, Column, Row};
 use cosmic::{widget, Application, Element, Theme};
-use kira::sound::PlaybackPosition;
 use kira::{
     manager::{backend::DefaultBackend, AudioManager, AudioManagerSettings},
     sound::{
@@ -23,6 +17,9 @@ use kira::{
     tween::{Easing, Tween},
     StartTime,
 };
+use std::collections::HashMap;
+use std::path::Path;
+use std::time::Duration;
 
 // SPDX-License-Identifier: GPL-3.0-only
 use crate::files::{self, NoiseTrack};
@@ -38,7 +35,6 @@ const LINEAR_TWEEN: Tween = Tween {
     start_time: StartTime::Immediate,
 };
 
-// const ID: &str = "io.github.bq-wrongway.CosmicNoise";
 // #[derive(Clone, Default)]
 pub struct CosmicNoise {
     core: Core,
@@ -62,12 +58,11 @@ pub enum Message {
 }
 impl Application for CosmicNoise {
     type Executor = cosmic::executor::Default;
+    const APP_ID: &'static str = "io.github.bq-wrongway.CosmicNoise";
 
     type Flags = ();
 
     type Message = Message;
-
-    const APP_ID: &'static str = "io.github.bq-wrongway.CosmicNoise";
 
     fn core(&self) -> &Core {
         &self.core
@@ -109,19 +104,15 @@ impl Application for CosmicNoise {
                         h.pause(LINEAR_TWEEN);
                         let cur_p = self.files.get_mut(i).unwrap();
                         cur_p.state = PlaybackState::Paused;
-
-
                     }
 
                     PlaybackState::Paused => {
                         h.resume(Tween::default());
                         self.files.get_mut(i).unwrap().state = PlaybackState::Playing;
-
                     }
                     _ => {
                         // h.resume(Tween::default());
                         self.files.get_mut(i).unwrap().state = PlaybackState::Stopped;
-
                     }
                 },
                 None => {
@@ -136,7 +127,6 @@ impl Application for CosmicNoise {
 
                     self.currently_playing.insert(i, handler);
                     self.files.get_mut(i).unwrap().state = PlaybackState::Playing;
-
                 }
             },
             Message::VolumeChanged(level) => {
@@ -213,8 +203,6 @@ impl Application for CosmicNoise {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        // let path = Path::new("/home/melnibone/Documents/res/icons/cosmic_noise.png").to_path_buf();
-        // let hand_svg = cosmic::widget::icon::from_path(path);
         self.core
             .applet
             .icon_button("io.github.bqwrongway.wave-symbolic")
@@ -231,22 +219,22 @@ impl Application for CosmicNoise {
                 container(cosmic::widget::icon::from_name(
                     "io.github.bqwrongway.pause-symbolic",
                 ))
-                    .width(20)
-                    .padding(0)
-                    .style(cosmic::style::Container::Transparent)
-                    .height(20),
-            ).on_press(Message::PauseAll),
-
+                .width(20)
+                .padding(0)
+                .style(cosmic::style::Container::Transparent)
+                .height(20),
+            )
+            .on_press(Message::PauseAll),
             mouse_area(
                 container(cosmic::widget::icon::from_name(
                     "io.github.bqwrongway.play-symbolic",
                 ))
-                    .width(20)
-                    .padding(0)
-                    .style(cosmic::style::Container::Transparent)
-                    .height(20),
-            ).on_press(Message::ResumeAll)
-
+                .width(20)
+                .padding(0)
+                .style(cosmic::style::Container::Transparent)
+                .height(20),
+            )
+            .on_press(Message::ResumeAll)
         ];
         let nav_row = Row::new()
             .push(
@@ -266,7 +254,8 @@ impl Application for CosmicNoise {
             .push(horizontal_space(Length::Fill))
             .push(play_pause)
             .width(500.0)
-            .height(Length::Shrink).align_items(Alignment::Center);
+            .height(Length::Shrink)
+            .align_items(Alignment::Center);
         let main_content = Column::new()
             .push(nav_row)
             .push(
@@ -295,13 +284,18 @@ impl Application for CosmicNoise {
         Some(cosmic::applet::style())
     }
 }
+
+//need to deal with styling and global pause  resume
 fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
     cosmic::widget::column()
         .push(
             cosmic::widget::row()
                 .push(
                     cosmic::iced::widget::text(uppercase_first(&t.name))
-                        .style(cosmic::style::Text::Accent)
+                        .style(match t.state {
+                            PlaybackState::Paused => cosmic::style::Text::Default,
+                            _ => cosmic::style::Text::Accent,
+                        })
                         .size(12)
                         .shaping(cosmic::iced_widget::text::Shaping::Advanced)
                         .height(Length::Fill)
@@ -309,7 +303,6 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
                         .horizontal_alignment(Horizontal::Center)
                         .width(Length::Fill),
                 )
-                // .push(cosmic::iced::widget::text("*"))
                 .align_items(cosmic::iced_core::Alignment::Center),
         )
         .push(
@@ -324,6 +317,30 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
         .width(Length::Fill)
         .height(Length::Fill)
 }
+//need to deal with styling and global pause  resume
+
+//get VIEW elements to be presented
+fn get_elements(files: &[NoiseTrack]) -> Vec<Element<Message>> {
+    let mut new_vec = vec![];
+    for (i, t) in files.iter().enumerate() {
+        new_vec.push(
+            mouse_area(
+                container(get_component(t, i))
+                    .width(150.0)
+                    .height(75.0)
+                    .style(match t.state {
+                        PlaybackState::Playing => cosmic::style::iced::Container::Secondary,
+                        _ => cosmic::style::iced::Container::Primary,
+                    })
+                    .padding(4.),
+            )
+            .on_press(Message::Play(i))
+            .into(),
+        )
+    }
+    new_vec
+}
+//first letter set to uppercase
 fn uppercase_first(data: &str) -> String {
     let mut result = String::new();
     let mut first = true;
@@ -337,30 +354,6 @@ fn uppercase_first(data: &str) -> String {
     }
     result
 }
-
-fn get_elements(files: &Vec<NoiseTrack>) -> Vec<Element<Message>> {
-    let mut new_vec = vec![];
-    for (i, t) in files.iter().enumerate() {
-        new_vec.push(
-            mouse_area(
-                container(get_component(&t, i))
-                    .width(150.0)
-                    .height(75.0)
-                    .style(match t.state {
-                        PlaybackState::Playing => {cosmic::style::iced::Container::Secondary}
-                        PlaybackState::Paused => {cosmic::style::iced::Container::Secondary}
-                        _=> {cosmic::style::iced::Container::Primary}
-                    })
-                    .padding(4.),
-            )
-            .on_press(Message::Play(i))
-            .into(),
-        )
-    }
-    new_vec
-}
-
-
 
 pub enum Error {
     FileSystem,
