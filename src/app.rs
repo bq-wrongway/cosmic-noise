@@ -9,14 +9,14 @@ use cosmic::iced_widget::{row, scrollable, text};
 use cosmic::widget::{container, flex_row, horizontal_space, mouse_area, slider, Column, Row};
 use cosmic::{widget, Application, Element, Theme};
 use kira::{
-    manager::{backend::DefaultBackend, AudioManager, AudioManagerSettings},
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
         FromFileError, PlaybackState,
     },
-    tween::{Easing, Tween},
     StartTime,
+    {backend::DefaultBackend, AudioManager, AudioManagerSettings},
 };
+use kira::{Easing, Tween};
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::Duration;
@@ -135,7 +135,7 @@ impl Application for CosmicNoise {
 
                 match self.currently_playing.get_mut(&s) {
                     Some(t) => {
-                        t.set_volume(f as f64, Tween::default());
+                        t.set_volume(f, Tween::default());
                         self.files.get_mut(s).unwrap().volume_level = f;
                     }
                     None => {
