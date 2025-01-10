@@ -8,7 +8,7 @@ use cosmic::iced_widget::{row, scrollable, text};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::widget::{container, flex_row, horizontal_space, mouse_area, slider, Column, Row};
 use cosmic::{theme, widget, Application, Element, Task, Theme};
-
+use crate::fl;
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -21,7 +21,7 @@ use kira::{Easing, Tween};
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::Duration;
-use i18n_embed_fl::fl;
+
 // SPDX-License-Identifier: GPL-3.0-only
 use crate::files::{self, NoiseTrack};
 
@@ -93,7 +93,7 @@ impl Application for CosmicNoise {
     }
 
     fn header_center(&self) -> Vec<Element<Self::Message>> {
-        vec![widget::text::heading("app-title").into()]
+        vec![widget::text::heading(fl!("app-title")).into()]
     }
 
     fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<Self::Message>> {
@@ -247,7 +247,7 @@ impl Application for CosmicNoise {
                 .on_press(Message::StopAll),
             )
             .push(horizontal_space())
-            .push(text("CosmicNoise"))
+            .push(text(fl!("app-title")))
             .push(horizontal_space())
             .push(play_pause)
             .width(500.0)
