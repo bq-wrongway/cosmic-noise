@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.bqwrongway.CosmicNoise</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0</project_license>
+  <name>Cosmic Noise</name>
+  <summary>Applet for playing background noise, heavility inspired by Blanket</summary>
+  <icon type="remote" width="64" height="64" scale="1">
+    https://github.com/bq-wrongway/cosmic-noise/raw/main/resources/icons/hicolor/scalable/apps/icon.svg
+  </icon>
+  <url type="vcs-browser">https://github.com/bq-wrongway/cosmic-noise</url>
+  <launchable type="desktop-id">io.github.bqwrongway.CosmicNoise.desktop</launchable>
+  <provides>
+    <id>io.github.bqwrongway.CosmicNoise</id>
+    <binaries>
+      <binary>cosmic-noise</binary>
+    </binaries>
+  </provides>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+  <categories>
+    <category>COSMIC</category>
+  </categories>
+  <keywords>
+    <keyword>COSMIC</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+</component>
+

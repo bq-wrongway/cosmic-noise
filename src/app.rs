@@ -1,13 +1,14 @@
-use cosmic::app::{Command, Core};
+use cosmic::app::{self, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{Alignment, Length, Limits};
 use cosmic::iced_core::Padding;
-use cosmic::iced_runtime::window::Id;
-use cosmic::iced_sctk::commands::popup::{destroy_popup, get_popup};
-use cosmic::iced_style::application;
+
+use cosmic::iced_core::window::Id;
 use cosmic::iced_widget::{row, scrollable, text};
+use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::widget::{container, flex_row, horizontal_space, mouse_area, slider, Column, Row};
-use cosmic::{widget, Application, Element, Theme};
+use cosmic::{theme, widget, Application, Element, Task, Theme};
+
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -20,10 +21,9 @@ use kira::{Easing, Tween};
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::Duration;
-
+use i18n_embed_fl::fl;
 // SPDX-License-Identifier: GPL-3.0-only
 use crate::files::{self, NoiseTrack};
-use crate::fl;
 
 const PADDING: f32 = 20.0;
 const SPACING: f32 = 10.0;
@@ -58,11 +58,11 @@ pub enum Message {
 }
 impl Application for CosmicNoise {
     type Executor = cosmic::executor::Default;
-    const APP_ID: &'static str = "io.github.bq-wrongway.CosmicNoise";
-
     type Flags = ();
 
     type Message = Message;
+
+    const APP_ID: &'static str = "io.github.bq-wrongway.CosmicNoise";
 
     fn core(&self) -> &Core {
         &self.core
@@ -72,11 +72,10 @@ impl Application for CosmicNoise {
         &mut self.core
     }
 
-    fn header_center(&self) -> Vec<Element<Self::Message>> {
-        vec![widget::text::heading(fl!("app-title")).into()]
-    }
-
-    fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn init(
+        core: Core,
+        _flags: Self::Flags,
+    ) -> (CosmicNoise, cosmic::Task<cosmic::app::Message<Message>>) {
         let cosmic_noise = CosmicNoise {
             core,
             popup: None,
@@ -90,13 +89,14 @@ impl Application for CosmicNoise {
             // ..Default::default()batch
         };
 
-        (cosmic_noise, Command::none())
+        (cosmic_noise, Task::none())
     }
 
-    fn update(
-        &mut self,
-        message: Self::Message,
-    ) -> cosmic::iced::Command<cosmic::app::Message<Self::Message>> {
+    fn header_center(&self) -> Vec<Element<Self::Message>> {
+        vec![widget::text::heading("app-title").into()]
+    }
+
+    fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<Self::Message>> {
         match message {
             Message::Play(i) => match self.currently_playing.get_mut(&i) {
                 Some(h) => match h.state() {
@@ -147,12 +147,12 @@ impl Application for CosmicNoise {
                 return if let Some(p) = self.popup.take() {
                     destroy_popup(p)
                 } else {
-                    let new_id = cosmic::iced_runtime::window::Id::unique();
+                    let new_id = cosmic::iced_core::window::Id::unique();
                     self.popup.replace(new_id);
                     let mut popup_settings =
                         self.core
                             .applet
-                            .get_popup_settings(Id::MAIN, new_id, None, None, None);
+                            .get_popup_settings(Id::RESERVED, new_id, None, None, None);
                     popup_settings.positioner.size_limits = Limits::NONE
                         .max_width(480.0)
                         .min_width(400.0)
@@ -199,7 +199,7 @@ impl Application for CosmicNoise {
                 println!("{:?}", self.currently_playing.is_empty());
             }
         }
-        Command::none()
+        Task::none()
     }
 
     fn view(&self) -> Element<Self::Message> {
@@ -221,7 +221,6 @@ impl Application for CosmicNoise {
                 ))
                 .width(20)
                 .padding(0)
-                .style(cosmic::style::Container::Transparent)
                 .height(20),
             )
             .on_press(Message::PauseAll),
@@ -231,7 +230,6 @@ impl Application for CosmicNoise {
                 ))
                 .width(20)
                 .padding(0)
-                .style(cosmic::style::Container::Transparent)
                 .height(20),
             )
             .on_press(Message::ResumeAll)
@@ -244,18 +242,17 @@ impl Application for CosmicNoise {
                     ))
                     .width(20)
                     .padding(0)
-                    .style(cosmic::style::Container::Transparent)
                     .height(20),
                 )
                 .on_press(Message::StopAll),
             )
-            .push(horizontal_space(Length::Fill))
+            .push(horizontal_space())
             .push(text("CosmicNoise"))
-            .push(horizontal_space(Length::Fill))
+            .push(horizontal_space())
             .push(play_pause)
             .width(500.0)
             .height(Length::Shrink)
-            .align_items(Alignment::Center);
+            .align_y(Alignment::Center);
         let main_content = Column::new()
             .push(nav_row)
             .push(
@@ -276,13 +273,17 @@ impl Application for CosmicNoise {
         self.core
             .applet
             .popup_container(main_content)
-            .width(Length::Fixed(480.))
-            .height(Length::Fixed(400.))
+            .max_width(480.)
+            .max_height(400.)
             .into()
     }
-    fn style(&self) -> Option<<Theme as application::StyleSheet>::Style> {
-        Some(cosmic::applet::style())
-    }
+
+    // need to fix this
+    // fn style(
+      //   &self,
+    // ) -> Option<<Theme as cosmic::iced::application::StyleSheet>::Style> {
+      //   Some(cosmic::applet::style())
+    // }
 }
 
 //need to deal with styling and global pause  resume
@@ -292,18 +293,18 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
             cosmic::widget::row()
                 .push(
                     cosmic::iced::widget::text(uppercase_first(&t.name))
-                        .style(match t.state {
-                            PlaybackState::Paused => cosmic::style::Text::Default,
-                            _ => cosmic::style::Text::Accent,
-                        })
+                         .class(match t.state {
+                             PlaybackState::Paused => cosmic::style::Text::Default,
+                             _ => cosmic::style::Text::Accent,
+                         })
                         .size(12)
                         .shaping(cosmic::iced_widget::text::Shaping::Advanced)
                         .height(Length::Fill)
-                        .vertical_alignment(Vertical::Center)
-                        .horizontal_alignment(Horizontal::Center)
+                        .align_y(Vertical::Center)
+                        .align_x(Horizontal::Center)
                         .width(Length::Fill),
                 )
-                .align_items(cosmic::iced_core::Alignment::Center),
+                .align_y(cosmic::iced_core::Alignment::Center),
         )
         .push(
             slider(0.0..=4.0, t.volume_level, move |x| {
@@ -328,10 +329,10 @@ fn get_elements(files: &[NoiseTrack]) -> Vec<Element<Message>> {
                 container(get_component(t, i))
                     .width(150.0)
                     .height(75.0)
-                    .style(match t.state {
-                        PlaybackState::Playing => cosmic::style::iced::Container::Secondary,
-                        _ => cosmic::style::iced::Container::Primary,
-                    })
+                     .class(match t.state {
+                         PlaybackState::Playing => cosmic::style::iced::Container::Secondary,
+                          _ => cosmic::style::iced::Container::Primary,
+                     })
                     .padding(4.),
             )
             .on_press(Message::Play(i))
