@@ -5,8 +5,8 @@ use app::CosmicNoise;
 mod app;
 mod i18n;
 
-mod files;
 mod config;
+mod files;
 
 /// The `cosmic::app::run()` function is the starting point of your application.
 /// It takes two arguments:
@@ -18,8 +18,7 @@ fn main() -> cosmic::iced::Result {
 
     // Enable localizations to be applied.
     i18n::init(&requested_languages);
-    
-    
+
     //in case i decide to change this to full fledget app
     // let settings = cosmic::app::Settings::default();
     cosmic::applet::run::<CosmicNoise>(())
