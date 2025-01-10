@@ -7,8 +7,8 @@ Terminal=false
 Categories=Cosmic;Iced;
 Keywords=Cosmic;Iced;
 # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
-Icon=com.system76.CosmicAppletDesktop-symbolic
-StartupNotify=true
+Icon=io.github.bqwrongway.wave-symbolic
 NoDisplay=true
 X-CosmicApplet=true
-X-CosmicHoverPopup=Start
+X-HostWaylandDisplay=true
+X-CosmicHoverPopup=Auto
