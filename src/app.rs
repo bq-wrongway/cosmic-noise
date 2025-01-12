@@ -1,14 +1,14 @@
-use cosmic::app::{self, Core};
+use cosmic::app::Core;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{Alignment, Length, Limits};
 use cosmic::iced_core::Padding;
 
+use crate::fl;
 use cosmic::iced_core::window::Id;
 use cosmic::iced_widget::{row, scrollable, text};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::widget::{container, flex_row, horizontal_space, mouse_area, slider, Column, Row};
-use cosmic::{theme, widget, Application, Element, Task, Theme};
-use crate::fl;
+use cosmic::{widget, Application, Element, Task};
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -35,6 +35,7 @@ const LINEAR_TWEEN: Tween = Tween {
     start_time: StartTime::Immediate,
 };
 
+// need to introduce proper error handling
 // #[derive(Clone, Default)]
 pub struct CosmicNoise {
     core: Core,
@@ -49,7 +50,7 @@ pub struct CosmicNoise {
 #[derive(Debug, Clone)]
 pub enum Message {
     TogglePopup,
-    PopupClosed(Id),
+    // PopupClosed(Id),
     Play(usize),
     VolumeChanged((f32, usize)),
     StopAll,
@@ -161,11 +162,11 @@ impl Application for CosmicNoise {
                     get_popup(popup_settings)
                 }
             }
-            Message::PopupClosed(id) => {
-                if self.popup.as_ref() == Some(&id) {
-                    self.popup = None;
-                }
-            }
+            // Message::PopupClosed(id) => {
+            //     if self.popup.as_ref() == Some(&id) {
+            //         self.popup = None;
+            //     }
+            // }
             Message::StopAll => {
                 if !&self.currently_playing.is_empty() {
                     for (n, t) in &mut self.currently_playing {
@@ -280,9 +281,9 @@ impl Application for CosmicNoise {
 
     // need to fix this
     // fn style(
-      //   &self,
+    //   &self,
     // ) -> Option<<Theme as cosmic::iced::application::StyleSheet>::Style> {
-      //   Some(cosmic::applet::style())
+    //   Some(cosmic::applet::style())
     // }
 }
 
@@ -293,10 +294,10 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
             cosmic::widget::row()
                 .push(
                     cosmic::iced::widget::text(uppercase_first(&t.name))
-                         .class(match t.state {
-                             PlaybackState::Paused => cosmic::style::Text::Default,
-                             _ => cosmic::style::Text::Accent,
-                         })
+                        .class(match t.state {
+                            PlaybackState::Paused => cosmic::style::Text::Default,
+                            _ => cosmic::style::Text::Accent,
+                        })
                         .size(12)
                         .shaping(cosmic::iced_widget::text::Shaping::Advanced)
                         .height(Length::Fill)
@@ -329,10 +330,10 @@ fn get_elements(files: &[NoiseTrack]) -> Vec<Element<Message>> {
                 container(get_component(t, i))
                     .width(150.0)
                     .height(75.0)
-                     .class(match t.state {
-                         PlaybackState::Playing => cosmic::style::iced::Container::Secondary,
-                          _ => cosmic::style::iced::Container::Primary,
-                     })
+                    .class(match t.state {
+                        PlaybackState::Playing => cosmic::style::iced::Container::Secondary,
+                        _ => cosmic::style::iced::Container::Primary,
+                    })
                     .padding(4.),
             )
             .on_press(Message::Play(i))
