@@ -25,10 +25,9 @@ use std::time::Duration;
 // SPDX-License-Identifier: GPL-3.0-only
 use crate::files::{self, NoiseTrack};
 
-const PADDING: f32 = 20.0;
-const SPACING: f32 = 10.0;
-const MIN_WIDTH: f32 = 200.0;
-const MIN_HEIGHT: f32 = 100.0;
+const SPACING: f32 = 5.0;
+const MAX_WIDTH: f32 = 480.0;
+const MAX_HEIGHT: f32 = 400.0;
 const LINEAR_TWEEN: Tween = Tween {
     duration: Duration::from_secs(1),
     easing: Easing::Linear,
@@ -40,8 +39,8 @@ const LINEAR_TWEEN: Tween = Tween {
 pub struct CosmicNoise {
     core: Core,
     popup: Option<Id>,
-    manager: AudioManager,
-    files: Vec<NoiseTrack>,
+    manager: Option<AudioManager>,
+    track_list: Vec<NoiseTrack>,
     currently_playing: HashMap<usize, StreamingSoundHandle<FromFileError>>,
     state: PlaybackState,
     error: Option<Error>,
@@ -80,10 +79,8 @@ impl Application for CosmicNoise {
         let cosmic_noise = CosmicNoise {
             core,
             popup: None,
-            manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
-                .ok()
-                .unwrap(),
-            files: files::load_data(),
+            manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).ok(),
+            track_list: files::load_data(),
             currently_playing: HashMap::new(),
             state: PlaybackState::Stopped,
             error: None,
@@ -103,31 +100,38 @@ impl Application for CosmicNoise {
                 Some(h) => match h.state() {
                     PlaybackState::Playing => {
                         h.pause(LINEAR_TWEEN);
-                        let cur_p = self.files.get_mut(i).unwrap();
-                        cur_p.state = PlaybackState::Paused;
+                        self.track_list[i].state = PlaybackState::Paused;
                     }
 
                     PlaybackState::Paused => {
                         h.resume(Tween::default());
-                        self.files.get_mut(i).unwrap().state = PlaybackState::Playing;
+                        self.track_list[i].state = PlaybackState::Playing;
                     }
                     _ => {
                         // h.resume(Tween::default());
-                        self.files.get_mut(i).unwrap().state = PlaybackState::Stopped;
+                        self.track_list[i].state = PlaybackState::Stopped;
                     }
                 },
                 None => {
                     let settings = StreamingSoundSettings::new().loop_region(0.0..);
                     let sound_data =
-                        StreamingSoundData::from_file(Path::new(&self.files[i].path)).unwrap();
+                        StreamingSoundData::from_file(Path::new(&self.track_list[i].path)).unwrap();
 
-                    let handler = self
-                        .manager
-                        .play(sound_data.with_settings(settings))
-                        .unwrap();
+                    match self.manager.as_mut() {
+                        Some(am) => {
+                            match am.play(sound_data.with_settings(settings)) {
+                                Ok(h) => {
+                                    self.currently_playing.insert(i, h);
+                                }
+                                Err(_e) => self.error = Some(Error::Handle),
+                            };
+                        }
+                        None => {
+                            self.error = Some(Error::PlayBack);
+                        }
+                    };
 
-                    self.currently_playing.insert(i, handler);
-                    self.files.get_mut(i).unwrap().state = PlaybackState::Playing;
+                    self.track_list[i].state = PlaybackState::Playing;
                 }
             },
             Message::VolumeChanged(level) => {
@@ -137,7 +141,7 @@ impl Application for CosmicNoise {
                 match self.currently_playing.get_mut(&s) {
                     Some(t) => {
                         t.set_volume(f, Tween::default());
-                        self.files.get_mut(s).unwrap().volume_level = f;
+                        self.track_list[s].volume_level = f;
                     }
                     None => {
                         println!("asd");
@@ -154,13 +158,10 @@ impl Application for CosmicNoise {
                         self.core
                             .applet
                             .get_popup_settings(Id::RESERVED, new_id, None, None, None);
-                    popup_settings.positioner.size_limits = Limits::NONE
-                        .max_width(480.0)
-                        .min_width(400.0)
-                        .min_height(200.0)
-                        .max_height(325.0);
+                    popup_settings.positioner.size_limits =
+                        Limits::NONE.max_width(MAX_WIDTH).max_height(MAX_HEIGHT);
                     get_popup(popup_settings)
-                }
+                };
             }
             // Message::PopupClosed(id) => {
             //     if self.popup.as_ref() == Some(&id) {
@@ -171,7 +172,7 @@ impl Application for CosmicNoise {
                 if !&self.currently_playing.is_empty() {
                     for (n, t) in &mut self.currently_playing {
                         t.stop(Tween::default());
-                        self.files.get_mut(*n).unwrap().state = PlaybackState::Stopped;
+                        self.track_list[*n].state = PlaybackState::Stopped;
                     }
                 }
                 self.currently_playing.clear();
@@ -213,7 +214,7 @@ impl Application for CosmicNoise {
 
     fn view_window(&self, _id: Id) -> Element<Self::Message> {
         //need to pay attention to flex row, since its inside of scrollable it might need to be wrapped by the container (no width/noheight settigns)
-        let content = flex_row(get_elements(&self.files));
+        let content = flex_row(get_elements(&self.track_list));
 
         let play_pause = row![
             mouse_area(
@@ -221,7 +222,6 @@ impl Application for CosmicNoise {
                     "io.github.bqwrongway.pause-symbolic",
                 ))
                 .width(20)
-                .padding(0)
                 .height(20),
             )
             .on_press(Message::PauseAll),
@@ -230,7 +230,6 @@ impl Application for CosmicNoise {
                     "io.github.bqwrongway.play-symbolic",
                 ))
                 .width(20)
-                .padding(0)
                 .height(20),
             )
             .on_press(Message::ResumeAll)
@@ -242,7 +241,6 @@ impl Application for CosmicNoise {
                         "io.github.bqwrongway.stop-symbolic",
                     ))
                     .width(20)
-                    .padding(0)
                     .height(20),
                 )
                 .on_press(Message::StopAll),
@@ -266,7 +264,7 @@ impl Application for CosmicNoise {
                 .height(320)
                 .width(500),
             )
-            .spacing(5)
+            .spacing(SPACING)
             .width(480.0)
             .height(400.)
             .padding(5);
@@ -274,8 +272,8 @@ impl Application for CosmicNoise {
         self.core
             .applet
             .popup_container(main_content)
-            .max_width(480.)
-            .max_height(400.)
+            .max_width(MAX_WIDTH)
+            .max_height(MAX_HEIGHT)
             .into()
     }
 
@@ -308,14 +306,14 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
                 .align_y(cosmic::iced_core::Alignment::Center),
         )
         .push(
-            slider(0.0..=4.0, t.volume_level, move |x| {
+            slider(-60.0..=40.0, t.volume_level, move |x| {
                 Message::VolumeChanged((x, i))
             })
             .width(Length::Fill)
-            .step(0.01)
+            .step(1.0)
             .height(10.0),
         )
-        .spacing(5)
+        .spacing(SPACING)
         .width(Length::Fill)
         .height(Length::Fill)
 }
@@ -360,4 +358,5 @@ fn uppercase_first(data: &str) -> String {
 pub enum Error {
     FileSystem,
     PlayBack,
+    Handle,
 }

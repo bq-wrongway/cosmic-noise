@@ -17,6 +17,8 @@ pub struct NoiseTrack {
 pub fn get_stem(name: &Path) -> String {
     Path::file_stem(name).unwrap().to_str().unwrap().to_string()
 }
+
+// error handling?
 pub fn load_data() -> Vec<NoiseTrack> {
     let mut files = vec![];
     if !files.is_empty() {
@@ -37,7 +39,9 @@ pub fn load_data() -> Vec<NoiseTrack> {
 }
 
 fn get_dat_local_dir() -> PathBuf {
-    //this just loads all sound files inside of .local/share (even trash files, needs to point to the cosmic-nois)
+    //this just loads all sound files inside of .local/share (even trash files, needs to poi
+
+    // error handling?nt to the cosmic-nois)
     append_to_path(dirs::data_local_dir().unwrap(), "/cosmic-noise")
 }
 fn append_to_path(p: PathBuf, s: &str) -> PathBuf {
@@ -50,7 +54,8 @@ pub trait FileExtension {
     fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
 }
 
-impl<P: AsRef<Path>> FileExtension for P {
+impl<P: AsRef<Path>> FileExtension for P
+{
     fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
         if let Some(extension) = self.as_ref().extension().and_then(OsStr::to_str) {
             return extensions
