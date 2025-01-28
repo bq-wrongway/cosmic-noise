@@ -1,13 +1,16 @@
+use crate::fl;
 use cosmic::app::Core;
 use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::{Alignment, Length, Limits};
-use cosmic::iced_core::Padding;
-
-use crate::fl;
+use cosmic::iced::Alignment::Center;
+use cosmic::iced::{Alignment, Length, Limits, Pixels};
 use cosmic::iced_core::window::Id;
-use cosmic::iced_widget::{row, scrollable, text};
+use cosmic::iced_core::Padding;
+use cosmic::iced_widget::text::Shaping::Advanced;
+use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
-use cosmic::widget::{container, flex_row, horizontal_space, mouse_area, slider, Column, Row};
+use cosmic::widget::{
+    container, flex_row, horizontal_space, mouse_area, slider, Column, Row, Space,
+};
 use cosmic::{widget, Application, Element, Task};
 use kira::{
     sound::{
@@ -19,15 +22,14 @@ use kira::{
 };
 use kira::{Easing, Tween};
 use std::collections::HashMap;
-use std::path::Path;
 use std::time::Duration;
 
 // SPDX-License-Identifier: GPL-3.0-only
 use crate::files::{self, NoiseTrack};
 
 const SPACING: f32 = 5.0;
-const MAX_WIDTH: f32 = 480.0;
-const MAX_HEIGHT: f32 = 400.0;
+const MAX_WIDTH: f32 = 150.0;
+const MAX_HEIGHT: f32 = 75.0;
 const LINEAR_TWEEN: Tween = Tween {
     duration: Duration::from_secs(1),
     easing: Easing::Linear,
@@ -80,7 +82,7 @@ impl Application for CosmicNoise {
             core,
             popup: None,
             manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).ok(),
-            track_list: files::load_data(),
+            track_list: files::load_data().unwrap_or_default(),
             currently_playing: HashMap::new(),
             state: PlaybackState::Stopped,
             error: None,
@@ -95,6 +97,10 @@ impl Application for CosmicNoise {
     }
 
     fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<Self::Message>> {
+        if self.track_list.is_empty() {
+            self.error = Some(Error::FileSystem)
+        }
+
         match message {
             Message::Play(i) => match self.currently_playing.get_mut(&i) {
                 Some(h) => match h.state() {
@@ -114,19 +120,25 @@ impl Application for CosmicNoise {
                 },
                 None => {
                     let settings = StreamingSoundSettings::new().loop_region(0.0..);
-                    let sound_data =
-                        StreamingSoundData::from_file(Path::new(&self.track_list[i].path)).unwrap();
 
-                    match self.manager.as_mut() {
-                        Some(am) => {
-                            match am.play(sound_data.with_settings(settings)) {
-                                Ok(h) => {
-                                    self.currently_playing.insert(i, h);
+                    match StreamingSoundData::from_file(&self.track_list[i].path) {
+                        Ok(sound_data) => {
+                            match self.manager.as_mut() {
+                                Some(am) => {
+                                    match am.play(sound_data.with_settings(settings)) {
+                                        Ok(h) => {
+                                            self.currently_playing.insert(i, h);
+                                        }
+                                        Err(_e) => self.error = Some(Error::Handle),
+                                    };
                                 }
-                                Err(_e) => self.error = Some(Error::Handle),
+                                None => {
+                                    self.error = Some(Error::PlayBack);
+                                }
                             };
                         }
-                        None => {
+                        Err(e) => {
+                            log::error!("Faild to play sound : {e}");
                             self.error = Some(Error::PlayBack);
                         }
                     };
@@ -144,7 +156,7 @@ impl Application for CosmicNoise {
                         self.track_list[s].volume_level = f;
                     }
                     None => {
-                        println!("asd");
+                        log::info!("Could not change the volume!");
                     }
                 }
             }
@@ -158,8 +170,7 @@ impl Application for CosmicNoise {
                         self.core
                             .applet
                             .get_popup_settings(Id::RESERVED, new_id, None, None, None);
-                    popup_settings.positioner.size_limits =
-                        Limits::NONE.max_width(MAX_WIDTH).max_height(MAX_HEIGHT);
+                    popup_settings.positioner.size_limits = Limits::NONE;
                     get_popup(popup_settings)
                 };
             }
@@ -178,7 +189,7 @@ impl Application for CosmicNoise {
                 self.currently_playing.clear();
                 self.state = PlaybackState::Stopped;
 
-                println!("{:?}", self.currently_playing.is_empty());
+                log::warn!("Could not stop  {:?}", self.currently_playing.is_empty());
             }
             Message::PauseAll => {
                 if !&self.currently_playing.is_empty() {
@@ -188,7 +199,7 @@ impl Application for CosmicNoise {
                     });
                     self.state = PlaybackState::Paused;
                 }
-                println!("{:?}", self.currently_playing.is_empty());
+                log::warn!("Could not pause  {:?}", self.currently_playing.is_empty());
             }
             Message::ResumeAll => {
                 if !&self.currently_playing.is_empty() {
@@ -198,7 +209,7 @@ impl Application for CosmicNoise {
                     });
                     self.state = PlaybackState::Playing;
                 }
-                println!("{:?}", self.currently_playing.is_empty());
+                log::warn!("Could not resume {:?}", self.currently_playing.is_empty());
             }
         }
         Task::none()
@@ -214,7 +225,7 @@ impl Application for CosmicNoise {
 
     fn view_window(&self, _id: Id) -> Element<Self::Message> {
         //need to pay attention to flex row, since its inside of scrollable it might need to be wrapped by the container (no width/noheight settigns)
-        let content = flex_row(get_elements(&self.track_list));
+        let content = flex_row(get_elements(&self.track_list)).spacing(5);
 
         let play_pause = row![
             mouse_area(
@@ -249,43 +260,37 @@ impl Application for CosmicNoise {
             .push(text(fl!("app-title")))
             .push(horizontal_space())
             .push(play_pause)
-            .width(500.0)
+            .width(Length::Fill)
             .height(Length::Shrink)
+            .padding(5)
             .align_y(Alignment::Center);
         let main_content = Column::new()
             .push(nav_row)
-            .push(
-                container(scrollable(container(content).padding(Padding {
-                    top: 0.,
-                    right: 10.,
-                    bottom: 5.,
-                    left: 0.,
-                })))
-                .height(320)
-                .width(500),
-            )
-            .spacing(SPACING)
-            .width(480.0)
-            .height(400.)
+            .push(horizontal_rule(6))
+            .push(horizontal_space().height(5))
+            .push(scrollable(container(content).padding(Padding {
+                // a workaround to keep slider away from content (its either this or fixed space with widget)
+                top: 0.,
+                right: 25.,
+                left: 0.,
+                bottom: 0.,
+            })))
+            .width(MAX_WIDTH * 4.)
+            .height(MAX_HEIGHT * 5.)
             .padding(5);
 
         self.core
             .applet
-            .popup_container(main_content)
-            .max_width(MAX_WIDTH)
-            .max_height(MAX_HEIGHT)
+            .popup_container(match self.error {
+                Some(_) => Column::new().push(Space::new(Length::Fill,Length::Fill )).push(text("files not found on your system \n $HOME/.local/share/cosmic-noise/sounds \n is either empty or nonexistant").align_x(Center).size(Pixels::from(20))).push(Space::new(Length::Fill,Length::Fill)),
+                None => main_content,
+            }).auto_width(true).auto_height(true)
             .into()
     }
-
-    // need to fix this
-    // fn style(
-    //   &self,
-    // ) -> Option<<Theme as cosmic::iced::application::StyleSheet>::Style> {
-    //   Some(cosmic::applet::style())
-    // }
 }
 
 //need to deal with styling and global pause  resume
+//maybe check some cursive fonts for the text
 fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
     cosmic::widget::column()
         .push(
@@ -296,8 +301,8 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
                             PlaybackState::Paused => cosmic::style::Text::Default,
                             _ => cosmic::style::Text::Accent,
                         })
-                        .size(12)
-                        .shaping(cosmic::iced_widget::text::Shaping::Advanced)
+                        .size(14)
+                        .shaping(Advanced)
                         .height(Length::Fill)
                         .align_y(Vertical::Center)
                         .align_x(Horizontal::Center)
@@ -326,8 +331,8 @@ fn get_elements(files: &[NoiseTrack]) -> Vec<Element<Message>> {
         new_vec.push(
             mouse_area(
                 container(get_component(t, i))
-                    .width(150.0)
-                    .height(75.0)
+                    .width(MAX_WIDTH)
+                    .height(MAX_HEIGHT)
                     .class(match t.state {
                         PlaybackState::Playing => cosmic::style::iced::Container::Secondary,
                         _ => cosmic::style::iced::Container::Primary,

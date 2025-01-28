@@ -1,61 +1,82 @@
+use kira::sound::PlaybackState;
 use std::{
     ffi::OsStr,
+    io::Error,
     path::{Path, PathBuf},
 };
-
-use kira::sound::PlaybackState;
 
 const ALLOWED_EXT: &[&str; 4] = &["mp3", "ogg", "flac", "wav"];
 
 pub struct NoiseTrack {
     pub name: String,
-    pub path: String,
+    pub path: PathBuf,
     pub volume_level: f32,
     pub state: PlaybackState,
 }
 //need ti handle error better
 pub fn get_stem(name: &Path) -> String {
-    Path::file_stem(name).unwrap().to_str().unwrap().to_string()
+    match Path::file_stem(name) {
+        Some(s) => s.to_string_lossy().into_owned(),
+        None => {
+            log::error!("could not get stem from the given path");
+            String::from("")
+        }
+    }
 }
 
 // error handling?
-pub fn load_data() -> Vec<NoiseTrack> {
+pub fn load_data() -> Result<Vec<NoiseTrack>, Error> {
     let mut files = vec![];
     if !files.is_empty() {
         files.clear();
     }
-    for entry in walkdir::WalkDir::new(get_dat_local_dir()) {
-        let entry = entry.unwrap();
-        if entry.path().is_file() && entry.path().has_extension(ALLOWED_EXT) {
-            files.push(NoiseTrack {
-                name: get_stem(entry.path()),
-                path: entry.path().to_str().unwrap().to_string(),
-                volume_level: 2.,
-                state: PlaybackState::Stopped,
-            });
+    match get_local_dir() {
+        Some(d) => {
+            for entry in walkdir::WalkDir::new(d) {
+                // clet entry = entry?;
+                match entry {
+                    Ok(dir_entry) => {
+                        if dir_entry.path().is_file() && dir_entry.path().has_extension(ALLOWED_EXT)
+                        {
+                            files.push(NoiseTrack {
+                                name: get_stem(dir_entry.path()),
+                                path: dir_entry.path().to_path_buf(),
+                                volume_level: 2.,
+                                state: PlaybackState::Stopped,
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Cant find or access $HOME.local/cosmic-noise/sounds directory  {}",
+                            e
+                        );
+                    }
+                }
+            }
+        }
+        None => {
+            log::error!("no directory found");
+        }
+    };
+    Ok(files)
+}
+
+fn get_local_dir() -> Option<PathBuf> {
+    match dirs::data_local_dir() {
+        Some(pb) => Some(pb.join("cosmic-noise")),
+        None => {
+            log::warn!("could not access/read local directory");
+            None
         }
     }
-    files
-}
-
-fn get_dat_local_dir() -> PathBuf {
-    //this just loads all sound files inside of .local/share (even trash files, needs to poi
-
-    // error handling?nt to the cosmic-nois)
-    append_to_path(dirs::data_local_dir().unwrap(), "/cosmic-noise")
-}
-fn append_to_path(p: PathBuf, s: &str) -> PathBuf {
-    let mut p = p.into_os_string();
-    p.push(s);
-    p.into()
 }
 // a way to check extension and allow only from the extension allow list
 pub trait FileExtension {
     fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
 }
 
-impl<P: AsRef<Path>> FileExtension for P
-{
+impl<P: AsRef<Path>> FileExtension for P {
     fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool {
         if let Some(extension) = self.as_ref().extension().and_then(OsStr::to_str) {
             return extensions
