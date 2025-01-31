@@ -2,7 +2,7 @@ use crate::fl;
 use cosmic::app::Core;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Alignment::Center;
-use cosmic::iced::{Alignment, Border, Length, Limits, Pixels};
+use cosmic::iced::{Alignment, Length, Limits, Pixels};
 use cosmic::iced_core::window::Id;
 use cosmic::iced_core::Padding;
 use cosmic::iced_widget::text::Shaping::Advanced;
@@ -11,7 +11,7 @@ use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::widget::{
     container, flex_row, horizontal_space, mouse_area, slider, Column, Row, Space,
 };
-use cosmic::{style, widget, Application, Element, Task};
+use cosmic::{widget, Application, Element, Task};
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -25,7 +25,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 // SPDX-License-Identifier: GPL-3.0-only
-use crate::files::{self, NoiseTrack};
+use crate::utils::files::{self, NoiseTrack};
+use crate::utils::ui_helpers::{idle_container, paused_contaner, playing_contaner};
 
 const SPACING: f32 = 5.0;
 const MAX_WIDTH: f32 = 150.0;
@@ -362,44 +363,4 @@ pub enum Error {
     FileSystem,
     PlayBack,
     Handle,
-}
-
-//container helper
-//need to add color
-pub fn paused_contaner<'a>() -> style::Container<'a> {
-    cosmic::style::Container::custom(|t| container::Style {
-        text_color: Some(t.cosmic().warning_color().into()),
-        background: Some(cosmic::iced::Background::Color(
-            t.cosmic().secondary_container_color().into(),
-        )),
-        border: Border {
-            color: t.cosmic().warning_color().into(),
-            width: 1.0,
-            radius: 8.into(),
-        },
-        ..Default::default()
-    })
-}
-pub fn playing_contaner<'a>() -> style::Container<'a> {
-    cosmic::style::Container::custom(|t| container::Style {
-        text_color: Some(t.cosmic().success_color().into()),
-        border: Border {
-            color: t.cosmic().success_color().into(),
-            width: 1.0,
-            radius: 8.into(),
-        },
-        background: Some(cosmic::iced::Background::Color(
-            t.cosmic().secondary_container_color().into(),
-        )),
-        ..Default::default()
-    })
-}
-pub fn idle_container<'a>() -> style::Container<'a> {
-    cosmic::style::Container::custom(|t| container::Style {
-        background: Some(cosmic::iced::Background::Color(
-            t.cosmic().bg_color().into(),
-        )),
-
-        ..Default::default()
-    })
 }

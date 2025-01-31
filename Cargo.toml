@@ -1,6 +1,6 @@
 [package]
 name = "cosmic-noise"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "GPL-3.0"
 description = "Applet for playing background noise, heavility inspired by Blanket"

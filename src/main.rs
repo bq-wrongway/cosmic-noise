@@ -4,9 +4,9 @@ use app::CosmicNoise;
 /// The `app` module is used by convention to indicate the main component of our application.
 mod app;
 mod i18n;
-
+mod utils;
 mod config;
-mod files;
+
 
 /// The `cosmic::app::run()` function is the starting point of your application.
 /// It takes two arguments:
