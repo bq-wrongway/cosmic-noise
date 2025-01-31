@@ -25,7 +25,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 // SPDX-License-Identifier: GPL-3.0-only
-use crate::files::{self, NoiseTrack};
+use crate::utils::files::{self, NoiseTrack};
+use crate::utils::ui_helpers::{idle_container, paused_contaner, playing_contaner};
 
 const SPACING: f32 = 5.0;
 const MAX_WIDTH: f32 = 150.0;
@@ -113,14 +114,10 @@ impl Application for CosmicNoise {
                         h.resume(Tween::default());
                         self.track_list[i].state = PlaybackState::Playing;
                     }
-                    _ => {
-                        // h.resume(Tween::default());
-                        self.track_list[i].state = PlaybackState::Stopped;
-                    }
+                    _ => {}
                 },
                 None => {
                     let settings = StreamingSoundSettings::new().loop_region(0.0..);
-
                     match StreamingSoundData::from_file(&self.track_list[i].path) {
                         Ok(sound_data) => {
                             match self.manager.as_mut() {
@@ -193,9 +190,9 @@ impl Application for CosmicNoise {
             }
             Message::PauseAll => {
                 if !&self.currently_playing.is_empty() {
-                    self.currently_playing.iter_mut().for_each(|(_n, t)| {
+                    self.currently_playing.iter_mut().for_each(|(n, t)| {
                         t.pause(Tween::default());
-                        // self.files.get_mut(*n).unwrap().is_playing = false;
+                        self.track_list[*n].state = PlaybackState::Paused;
                     });
                     self.state = PlaybackState::Paused;
                 }
@@ -203,9 +200,9 @@ impl Application for CosmicNoise {
             }
             Message::ResumeAll => {
                 if !&self.currently_playing.is_empty() {
-                    self.currently_playing.iter_mut().for_each(|(_n, t)| {
+                    self.currently_playing.iter_mut().for_each(|(n, t)| {
                         t.resume(Tween::default());
-                        // self.files.get_mut(*n).unwrap().is_playing = false;
+                        self.track_list[*n].state = PlaybackState::Playing;
                     });
                     self.state = PlaybackState::Playing;
                 }
@@ -327,6 +324,7 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
 //get VIEW elements to be presented
 fn get_elements(files: &[NoiseTrack]) -> Vec<Element<Message>> {
     let mut new_vec = vec![];
+
     for (i, t) in files.iter().enumerate() {
         new_vec.push(
             mouse_area(
@@ -334,8 +332,9 @@ fn get_elements(files: &[NoiseTrack]) -> Vec<Element<Message>> {
                     .width(MAX_WIDTH)
                     .height(MAX_HEIGHT)
                     .class(match t.state {
-                        PlaybackState::Playing => cosmic::style::iced::Container::Secondary,
-                        _ => cosmic::style::iced::Container::Primary,
+                        PlaybackState::Paused => paused_contaner(),
+                        PlaybackState::Playing => playing_contaner(),
+                        _ => idle_container(),
                     })
                     .padding(4.),
             )
