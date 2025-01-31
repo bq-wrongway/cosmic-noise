@@ -4,7 +4,6 @@ use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Alignment::Center;
 use cosmic::iced::{Alignment, Length, Limits, Pixels};
 use cosmic::iced_core::window::Id;
-use cosmic::iced_core::Padding;
 use cosmic::iced_widget::text::Shaping::Advanced;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
@@ -225,32 +224,22 @@ impl Application for CosmicNoise {
         let content = flex_row(get_elements(&self.track_list)).spacing(5);
 
         let play_pause = row![
-            mouse_area(
-                container(cosmic::widget::icon::from_name(
-                    "io.github.bqwrongway.pause-symbolic",
-                ))
-                .width(20)
-                .height(20),
-            )
+            mouse_area(container(
+                cosmic::widget::icon::from_name("io.github.bqwrongway.pause-symbolic",).size(20)
+            ))
             .on_press(Message::PauseAll),
-            mouse_area(
-                container(cosmic::widget::icon::from_name(
-                    "io.github.bqwrongway.play-symbolic",
-                ))
-                .width(20)
-                .height(20),
-            )
+            mouse_area(container(
+                cosmic::widget::icon::from_name("io.github.bqwrongway.play-symbolic",).size(20)
+            ))
             .on_press(Message::ResumeAll)
-        ];
+        ]
+        .push(Space::new(10, 5))
+        .spacing(10);
         let nav_row = Row::new()
             .push(
-                mouse_area(
-                    container(cosmic::widget::icon::from_name(
-                        "io.github.bqwrongway.stop-symbolic",
-                    ))
-                    .width(20)
-                    .height(20),
-                )
+                mouse_area(container(
+                    cosmic::widget::icon::from_name("io.github.bqwrongway.stop-symbolic").size(20),
+                ))
                 .on_press(Message::StopAll),
             )
             .push(horizontal_space())
@@ -265,13 +254,7 @@ impl Application for CosmicNoise {
             .push(nav_row)
             .push(horizontal_rule(6))
             .push(horizontal_space().height(5))
-            .push(scrollable(container(content).padding(Padding {
-                // a workaround to keep slider away from content (its either this or fixed space with widget)
-                top: 0.,
-                right: 25.,
-                left: 0.,
-                bottom: 0.,
-            })))
+            .push(scrollable(row![content].push(Space::new(12, 1))))
             .width(MAX_WIDTH * 4.)
             .height(MAX_HEIGHT * 5.)
             .padding(5);
