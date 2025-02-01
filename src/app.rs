@@ -6,6 +6,7 @@ use cosmic::iced_core::window::Id;
 use cosmic::iced_widget::text::Shaping::Advanced;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
+use cosmic::theme::iced::Slider;
 use cosmic::widget::{
     container, flex_row, horizontal_space, mouse_area, slider, Column, Row, Space,
 };
@@ -298,6 +299,7 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
             slider(-60.0..=40.0, t.volume_level, move |x| {
                 Message::VolumeChanged((x, i))
             })
+            .class(Slider::Standard)
             .width(Length::Fill)
             .step(1.0)
             .height(10.0),

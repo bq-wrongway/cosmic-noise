@@ -2,22 +2,41 @@
 
 Applet for playing background noise, heavily inspired by Blanket
 
+#### Disclaimer:
+At some point this will be distributed as flatpak / deb file, untill then best way to install is to download repo and build binary with 
 
-* This apples was intended to be distributed as package/ flatpak
-* This package is also very much WIP so basically error handling is not really good, so in order to get this to work you will need to copy resources required on your own
 
-### How to 
+### How to install
+
+```rust
+cargo build --release
 ```
- clone project to your computer
- then enter project and use
- * cargo build --release
- newly created bin file then you can just copy anywere that you want, that is on path
- io.github.bq-wrongway.CosmicNoise.desktop file you need to copy to 
- /usr/share/application 
- you need to copy icons from resource folder to /usr/share/icons/Cosmic/scalable/apps
-and you need to copy sounds directory to $HOME/.local/share/cosmic-noise/
+then just copy binary to some location on your computed that is part of the path.
+
+Sadly, this is still not enough, you will need to for now manually copy icons and sounds to required places :
 
 
 ```
+ there are 4 icons under resource/icons folder of this repo, they need to go to :
+/usr/share/icons/Pop/scalable/actions
+(!!! you need to copy icons themself not the folder)
 
-Anyways this is now quite convoluted, but i will try to add proper error and fallbacks as soon as i can, i am just kinda quite busy atm.
+and folder sounds (also found under resources folder of this repo) should be copied either to 
+$HOME/.local/share/cosmic-noise
+$HOME/.config/cosmic-noise
+
+```
+
+Last but not least, this needs to be run as an applet, so you need to copy 
+
+```
+io.github.bq-wrongway.CosmicNoise.desktop
+ ```
+to 
+
+```
+/usr/share/applications/
+```
+
+After this you should be good to go, you just need to add applet to your panel, which if everything was done correctly you will be able to do from cosmic settins.
+
