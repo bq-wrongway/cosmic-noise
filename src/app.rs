@@ -1,7 +1,6 @@
 use crate::fl;
 use cosmic::app::Core;
 use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::Alignment::Center;
 use cosmic::iced::{Alignment, Length, Limits, Pixels};
 use cosmic::iced_core::window::Id;
 use cosmic::iced_widget::text::Shaping::Advanced;
@@ -212,8 +211,13 @@ impl Application for CosmicNoise {
     }
 
     fn view(&self) -> Element<Self::Message> {
+        //how to load icon, from system icons, but still fallback to custom one in case of error
         self.core
             .applet
+            // .icon_button_from_handle(Handle {
+            //     symbolic: true,
+            //     data: widget::icon::Data::Svg(svg::Handle::from_path("//pathto")),
+            // })
             .icon_button("io.github.bqwrongway.wave-symbolic")
             .on_press(Message::TogglePopup)
             .into()
@@ -262,7 +266,7 @@ impl Application for CosmicNoise {
         self.core
             .applet
             .popup_container(match self.error {
-                Some(_) => Column::new().push(Space::new(Length::Fill,Length::Fill )).push(text("files not found on your system \n $HOME/.local/share/cosmic-noise/sounds \n is either empty or nonexistant").align_x(Center).size(Pixels::from(20))).push(Space::new(Length::Fill,Length::Fill)),
+                Some(_) => Column::new().push(text("files not found on your system \n $HOME/.local/share/cosmic-noise/sounds \n is either empty or nonexistant").size(Pixels::from(20))).width(400).height(400).padding(40.),
                 None => main_content,
             }).auto_width(true).auto_height(true)
             .into()

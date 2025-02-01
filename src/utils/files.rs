@@ -7,6 +7,7 @@ use std::{
 use crate::app::{self, Error};
 
 const ALLOWED_EXT: &[&str; 4] = &["mp3", "ogg", "flac", "wav"];
+const SOUND_FILE: &str = "cosmic-noise/sounds/";
 #[derive(Debug, Clone)]
 pub struct NoiseTrack {
     pub name: String,
@@ -41,16 +42,39 @@ pub fn load_data() -> Result<Vec<NoiseTrack>, app::Error> {
         })
         .collect()
 }
+//check if resource directories exist and return the path of one that does
 
 fn get_local_dir() -> Option<PathBuf> {
-    match dirs::data_local_dir() {
-        Some(pb) => Some(pb.join("cosmic-noise")),
-        None => {
-            log::warn!("could not access/read local directory");
-            None
+    match data_dir_exists() {
+        Some(s) => {
+            println!("here : {:?}", s);
+            Some(s)
         }
+        None => config_dir_exists(),
     }
 }
+
+// checks if users .config contains directory cosmic-noise/sounds
+fn config_dir_exists() -> Option<PathBuf> {
+    match dirs::config_local_dir() {
+        Some(s) => match s.join(SOUND_FILE).exists() {
+            true => Some(s.join(SOUND_FILE)),
+            false => None,
+        },
+        None => None,
+    }
+}
+// checks if users .local/share contains directory cosmic-noise/sounds
+fn data_dir_exists() -> Option<PathBuf> {
+    match dirs::data_local_dir() {
+        Some(s) => match s.join(SOUND_FILE).exists() {
+            true => Some(s.join(SOUND_FILE)),
+            false => None,
+        },
+        None => None,
+    }
+}
+
 // a way to check extension and allow only from the extension allow list
 pub trait FileExtension {
     fn has_extension<S: AsRef<str>>(&self, extensions: &[S]) -> bool;
