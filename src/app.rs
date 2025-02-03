@@ -1,16 +1,19 @@
 use crate::fl;
 use cosmic::app::Core;
-use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::{Alignment, Length, Limits, Pixels};
+use cosmic::iced::Alignment::Center;
+use cosmic::iced::Length::{Fill, Shrink};
+use cosmic::iced::Limits;
+use cosmic::iced::Pixels;
 use cosmic::iced_core::window::Id;
 use cosmic::iced_widget::text::Shaping::Advanced;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::theme::iced::Slider;
+use cosmic::widget::text::heading;
 use cosmic::widget::{
     container, flex_row, horizontal_space, mouse_area, slider, Column, Row, Space,
 };
-use cosmic::{widget, Application, Element, Task};
+use cosmic::{style, Application, Element, Task};
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -93,7 +96,7 @@ impl Application for CosmicNoise {
     }
 
     fn header_center(&self) -> Vec<Element<Self::Message>> {
-        vec![widget::text::heading(fl!("app-title")).into()]
+        vec![heading(fl!("app-title")).into()]
     }
 
     fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<Self::Message>> {
@@ -117,27 +120,13 @@ impl Application for CosmicNoise {
                 },
                 None => {
                     let settings = StreamingSoundSettings::new().loop_region(0.0..);
-                    match StreamingSoundData::from_file(&self.track_list[i].path) {
-                        Ok(sound_data) => {
-                            match self.manager.as_mut() {
-                                Some(am) => {
-                                    match am.play(sound_data.with_settings(settings)) {
-                                        Ok(h) => {
-                                            self.currently_playing.insert(i, h);
-                                        }
-                                        Err(_e) => self.error = Some(Error::Handle),
-                                    };
-                                }
-                                None => {
-                                    self.error = Some(Error::PlayBack);
-                                }
-                            };
+                    match play_sound(i, &self.track_list, &mut self.manager, settings) {
+                        Ok(result) => {
+                            let (index, handle) = result;
+                            self.currently_playing.insert(index, handle);
                         }
-                        Err(e) => {
-                            log::error!("Faild to play sound : {e}");
-                            self.error = Some(Error::PlayBack);
-                        }
-                    };
+                        Err(_e) => self.error = Some(Error::PlayBack),
+                    }
 
                     self.track_list[i].state = PlaybackState::Playing;
                 }
@@ -251,25 +240,31 @@ impl Application for CosmicNoise {
             .push(text(fl!("app-title")))
             .push(horizontal_space())
             .push(play_pause)
-            .width(Length::Fill)
-            .height(Length::Shrink)
+            .width(Fill)
+            .height(Shrink)
             .padding(5)
-            .align_y(Alignment::Center);
+            .align_y(Center);
         let main_content = Column::new()
             .push(nav_row)
             .push(horizontal_rule(6))
             .push(horizontal_space().height(5))
-            .push(scrollable(row![content].push(Space::new(12, 1))))
+            .push(scrollable(row![content].push(Space::new(18, 1))))
             .width(MAX_WIDTH * 4.)
             .height(MAX_HEIGHT * 5.)
-            .padding(5);
+            .padding(10);
 
         self.core
             .applet
             .popup_container(match self.error {
-                Some(_) => Column::new().push(text("files not found on your system \n $HOME/.local/share/cosmic-noise/sounds \n is either empty or nonexistant").size(Pixels::from(20))).width(400).height(400).padding(40.),
+                Some(_) => Column::new()
+                    .push(text(fl!("not-found")).size(Pixels::from(20)))
+                    .width(400)
+                    .height(400)
+                    .padding(40.),
                 None => main_content,
-            }).auto_width(true).auto_height(true)
+            })
+            .auto_width(true)
+            .auto_height(true)
             .into()
     }
 }
@@ -283,30 +278,30 @@ fn get_component(t: &NoiseTrack, i: usize) -> Column<Message> {
                 .push(
                     cosmic::iced::widget::text(uppercase_first(&t.name))
                         .class(match t.state {
-                            PlaybackState::Paused => cosmic::style::Text::Default,
-                            _ => cosmic::style::Text::Accent,
+                            PlaybackState::Paused => style::Text::Default,
+                            _ => style::Text::Accent,
                         })
                         .size(14)
                         .shaping(Advanced)
-                        .height(Length::Fill)
-                        .align_y(Vertical::Center)
-                        .align_x(Horizontal::Center)
-                        .width(Length::Fill),
+                        .height(Fill)
+                        .align_y(Center)
+                        .align_x(Center)
+                        .width(Fill),
                 )
-                .align_y(cosmic::iced_core::Alignment::Center),
+                .align_y(Center),
         )
         .push(
             slider(-60.0..=40.0, t.volume_level, move |x| {
                 Message::VolumeChanged((x, i))
             })
             .class(Slider::Standard)
-            .width(Length::Fill)
+            .width(Fill)
             .step(1.0)
             .height(10.0),
         )
         .spacing(SPACING)
-        .width(Length::Fill)
-        .height(Length::Fill)
+        .width(Fill)
+        .height(Fill)
 }
 //need to deal with styling and global pause  resume
 
@@ -352,4 +347,25 @@ pub enum Error {
     FileSystem,
     PlayBack,
     Handle,
+}
+
+pub fn play_sound(
+    i: usize,
+    tracks: &[NoiseTrack],
+    manager: &mut Option<AudioManager>,
+    settings: StreamingSoundSettings,
+) -> Result<(usize, StreamingSoundHandle<FromFileError>), Error> {
+    match StreamingSoundData::from_file(&tracks[i].path) {
+        Ok(sound_data) => match manager.as_mut() {
+            Some(am) => match am.play(sound_data.with_settings(settings)) {
+                Ok(h) => Ok((i, h)),
+                Err(_e) => Err(Error::Handle),
+            },
+            None => Err(Error::PlayBack),
+        },
+        Err(e) => {
+            log::error!("Faild to play sound : {e}");
+            Err(Error::PlayBack)
+        }
+    }
 }

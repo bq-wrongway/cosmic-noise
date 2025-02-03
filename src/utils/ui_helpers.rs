@@ -22,9 +22,10 @@ pub fn playing_contaner<'a>() -> style::Container<'a> {
     cosmic::style::Container::custom(|t| container::Style {
         text_color: Some(t.cosmic().success_color().into()),
         border: Border {
-            color: t.cosmic().success_color().into(),
-            width: 1.0,
+            // color: t.cosmic().success_color().into(),
+            // width: 1.0,
             radius: 8.into(),
+            ..Default::default()
         },
         background: Some(cosmic::iced::Background::Color(
             t.cosmic().secondary_container_color().into(),
