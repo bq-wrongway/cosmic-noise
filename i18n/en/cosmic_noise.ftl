@@ -1,4 +1,4 @@
 app-title = Cosmic Noise
-not-found = files not found on your system \n $HOME/.local/share/cosmic-noise/sounds \n is either empty or nonexistant
+not-found = files not found in '$HOME/.local/share/cosmic-noise/sounds' or '$HOME/.config/cosmic-noise/sounds' 
 io-error = IO error text
 pb-error = Playback error

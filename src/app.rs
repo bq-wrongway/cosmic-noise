@@ -7,8 +7,8 @@ use cosmic::iced_widget::text::Style;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::theme::iced::Slider;
 use cosmic::widget::text::heading;
-use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Row, Space};
-use cosmic::{style, Application, Element, Task};
+use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Row, Space, Text};
+use cosmic::{style, Application, Element, Task, Theme};
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -19,6 +19,7 @@ use kira::{
 };
 use kira::{Easing, Tween};
 use std::collections::HashMap;
+use std::fmt;
 use std::time::Duration;
 
 // SPDX-License-Identifier: GPL-3.0-only
@@ -49,8 +50,6 @@ pub struct CosmicNoise {
 #[derive(Debug, Clone)]
 pub enum Message {
     Loaded(Result<Vec<NoiseTrack>, Error>),
-    // TogglePopup,
-    // PopupClosed(Id),
     Play(usize),
     VolumeChanged((f32, usize)),
     StopAll,
@@ -107,7 +106,10 @@ impl Application for CosmicNoise {
 
         match message {
             Message::Loaded(v) => match v {
-                Ok(tracks) => self.track_list = tracks,
+                Ok(tracks) => {
+                    self.error = None;
+                    self.track_list = tracks
+                }
                 Err(e) => self.error = Some(e),
             },
             Message::Play(i) => match self.currently_playing.get_mut(&i) {
@@ -154,25 +156,6 @@ impl Application for CosmicNoise {
                     }
                 }
             }
-            // Message::TogglePopup => {
-            //     return if let Some(p) = self.popup.take() {
-            //         destroy_popup(p)
-            //     } else {
-            //         let new_id = cosmic::iced_core::window::Id::unique();
-            //         self.popup.replace(new_id);
-            //         let mut popup_settings =
-            //             self.core
-            //                 .applet
-            //                 .get_popup_settings(Id::RESERVED, new_id, None, None, None);
-            //         popup_settings.positioner.size_limits = Limits::NONE;
-            //         get_popup(popup_settings)
-            //     };
-            // }
-            // Message::PopupClosed(id) => {
-            //     if self.popup.as_ref() == Some(&id) {
-            //         self.popup = None;
-            //     }
-            // }
             Message::StopAll => {
                 if !&self.currently_playing.is_empty() {
                     for (n, t) in &mut self.currently_playing {
@@ -263,59 +246,11 @@ impl Application for CosmicNoise {
     }
 }
 
-//     fn view_window(&self, _id: Id) -> Element<Self::Message> {
-//         //need to pay attention to flex row, since its inside of scrollable it might need to be wrapped by the container (no width/noheight settigns)
-//         let content = row(get_elements(&self.track_list)).spacing(5).wrap();
-
-//         let play_pause = row![
-//             mouse_area(container(
-//                 cosmic::widget::icon::from_name("io.github.bqwrongway.pause-symbolic",).size(20)
-//             ))
-//             .on_press(Message::PauseAll),
-//             mouse_area(container(
-//                 cosmic::widget::icon::from_name("io.github.bqwrongway.play-symbolic",).size(20)
-//             ))
-//             .on_press(Message::ResumeAll)
-//         ]
-//         .push(Space::new(10, 5))
-//         .spacing(10);
-//         let nav_row = Row::new()
-//             .push(
-//                 mouse_area(container(
-//                     cosmic::widget::icon::from_name("io.github.bqwrongway.stop-symbolic").size(20),
-//                 ))
-//                 .on_press(Message::StopAll),
-//             )
-//             .push(horizontal_space())
-//             .push(text(fl!("app-title")))
-//             .push(horizontal_space())
-//             .push(play_pause)
-//             .width(Fill)
-//             .height(Shrink)
-//             .padding(5)
-//             .align_y(Center);
-//         let main_content = Column::new()
-//             .push(nav_row)
-//             .push(horizontal_rule(6))
-//             .push(horizontal_space().height(5))
-//             .push(scrollable(row![content].push(Space::new(18, 1))))
-//             .width(MAX_WIDTH * 4.)
-//             .height(MAX_HEIGHT * 5.)
-//             .padding(10);
-
-//         self.core
-//             .applet
-//             .popup_container(match self.error {
-//                 Some(_) => Column::new()
-//                     .push(text(fl!("not-found")).size(Pixels::from(20)))
-//                     .width(400)
-//                     .height(400)
-//                     .padding(40.),
-//                 None => main_content,
-//             })
-//             .auto_width(true)
-//             .auto_height(true)
-//             .into()
+// fn get_error_id<'a>(error: Error) -> Text<'a, Theme> {
+//     match error {
+//         Error::FileSystem => text(error.to_string()),
+//         Error::PlayBack => text(error.to_string()),
+//         Error::Handle => text(fl!("pb-error")),
 //     }
 // }
 
@@ -398,7 +333,13 @@ pub enum Error {
     PlayBack,
     Handle,
 }
-
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
+}
 pub fn play_sound(
     i: usize,
     tracks: &[NoiseTrack],
@@ -409,12 +350,15 @@ pub fn play_sound(
         Ok(sound_data) => match manager.as_mut() {
             Some(am) => match am.play(sound_data.with_settings(settings)) {
                 Ok(h) => Ok((i, h)),
-                Err(_e) => Err(Error::Handle),
+                Err(e) => {
+                    log::error!("{}", e);
+                    Err(Error::Handle)
+                }
             },
             None => Err(Error::PlayBack),
         },
         Err(e) => {
-            log::error!("Faild to play sound : {e}");
+            log::error!("Failed to play sound : {e}");
             Err(Error::PlayBack)
         }
     }
