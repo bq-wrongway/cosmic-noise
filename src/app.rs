@@ -100,16 +100,9 @@ impl Application for CosmicNoise {
     }
 
     fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<Self::Message>> {
-        if self.track_list.is_empty() {
-            self.error = Some(Error::FileSystem)
-        }
-
         match message {
             Message::Loaded(v) => match v {
-                Ok(tracks) => {
-                    self.error = None;
-                    self.track_list = tracks
-                }
+                Ok(tracks) => self.track_list = tracks,
                 Err(e) => self.error = Some(e),
             },
             Message::Play(i) => match self.currently_playing.get_mut(&i) {
