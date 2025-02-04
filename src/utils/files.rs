@@ -25,7 +25,7 @@ pub fn get_stem(name: &Path) -> String {
 }
 
 // error handling?
-pub fn load_data() -> Result<Vec<NoiseTrack>, app::Error> {
+pub async fn load_data() -> Result<Vec<NoiseTrack>, app::Error> {
     let d = get_local_dir().ok_or(Error::FileSystem)?;
 
     walkdir::WalkDir::new(d)
