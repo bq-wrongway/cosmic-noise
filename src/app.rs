@@ -1,14 +1,14 @@
 use crate::fl;
 use cosmic::app::Core;
 use cosmic::iced::Alignment::Center;
-use cosmic::iced::Length::{Fill, Shrink};
+use cosmic::iced::Length::Fill;
 use cosmic::iced_widget::text::Shaping::Advanced;
 use cosmic::iced_widget::text::Style;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::theme::iced::Slider;
 use cosmic::widget::text::heading;
-use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Row, Space, Text};
-use cosmic::{style, Application, Element, Task, Theme};
+use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Space};
+use cosmic::{style, Application, Element, Task};
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -93,6 +93,25 @@ impl Application for CosmicNoise {
                 cosmic::app::Message::App(Message::Loaded(f))
             }),
         )
+    }
+
+    fn header_start(&self) -> Vec<Element<Self::Message>> {
+        let play_pause = row![
+            mouse_area(container(
+                cosmic::widget::icon::from_name("io.github.bqwrongway.stop-symbolic").size(20),
+            ))
+            .on_press(Message::StopAll),
+            mouse_area(container(
+                cosmic::widget::icon::from_name("io.github.bqwrongway.pause-symbolic",).size(20)
+            ))
+            .on_press(Message::PauseAll),
+            mouse_area(container(
+                cosmic::widget::icon::from_name("io.github.bqwrongway.play-symbolic",).size(20)
+            ))
+            .on_press(Message::ResumeAll)
+        ]
+        .spacing(10);
+        vec![play_pause.into()]
     }
 
     fn header_center(&self) -> Vec<Element<Self::Message>> {
@@ -188,36 +207,42 @@ impl Application for CosmicNoise {
     fn view(&self) -> Element<Self::Message> {
         //how to load icon, from system icons, but still fallback to custom one in case of error
         let content = row(get_elements(&self.track_list)).spacing(5).wrap();
+        // let error_container: cosmic::iced_core::widget::Text<Theme, Renderer> =
+        //     match self.error.as_ref().unwrap() {
+        //         Error::FileSystem => text(fl!("not-found")),
+        //         Error::PlayBack => text("a"),
+        //         Error::Handle => text("a"),
+        //     };
 
-        let play_pause = row![
-            mouse_area(container(
-                cosmic::widget::icon::from_name("io.github.bqwrongway.pause-symbolic",).size(20)
-            ))
-            .on_press(Message::PauseAll),
-            mouse_area(container(
-                cosmic::widget::icon::from_name("io.github.bqwrongway.play-symbolic",).size(20)
-            ))
-            .on_press(Message::ResumeAll)
-        ]
-        .push(Space::new(10, 5))
-        .spacing(10);
-        let nav_row = Row::new()
-            .push(
-                mouse_area(container(
-                    cosmic::widget::icon::from_name("io.github.bqwrongway.stop-symbolic").size(20),
-                ))
-                .on_press(Message::StopAll),
-            )
-            .push(horizontal_space())
-            .push(text(""))
-            .push(horizontal_space())
-            .push(play_pause)
-            .width(Fill)
-            .height(Shrink)
-            .padding(5)
-            .align_y(Center);
+        // let play_pause = row![
+        //     mouse_area(container(
+        //         cosmic::widget::icon::from_name("io.github.bqwrongway.pause-symbolic",).size(20)
+        //     ))
+        //     .on_press(Message::PauseAll),
+        //     mouse_area(container(
+        //         cosmic::widget::icon::from_name("io.github.bqwrongway.play-symbolic",).size(20)
+        //     ))
+        //     .on_press(Message::ResumeAll)
+        // ]
+        // .push(Space::new(10, 5))
+        // .spacing(10);
+        // let nav_row = Row::new()
+        //     .push(
+        //         mouse_area(container(
+        //             cosmic::widget::icon::from_name("io.github.bqwrongway.stop-symbolic").size(20),
+        //         ))
+        //         .on_press(Message::StopAll),
+        //     )
+        //     .push(horizontal_space())
+        //     .push(text(""))
+        //     .push(horizontal_space())
+        //     .push(play_pause)
+        //     .width(Fill)
+        //     .height(Shrink)
+        //     .padding(5)
+        //     .align_y(Center);
         let main_content = Column::new()
-            .push(nav_row)
+            // .push(nav_row)
             .push_maybe(self.error.is_some().then(|| {
                 text(fl!("not-found"))
                     .class(style::Text::Custom(|t| Style {
