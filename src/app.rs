@@ -105,10 +105,6 @@ impl Application for CosmicNoise {
     }
 
     fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<Self::Message>> {
-        if self.track_list.is_empty() {
-            self.error = Some(Error::FileSystem)
-        }
-
         match message {
             Message::Loaded(v) => match v {
                 Ok(tracks) => self.track_list = tracks,
