@@ -4,7 +4,7 @@ Applet for playing background noise, heavily inspired by Blanket
 
 ## Galery 
 
-<![dark](https://ibb.co/nSwzHgx)> <![light](https://ibb.co/mVMhMtvg)>
+![dark](resources/screenshots/dark.png) ![light](resources/screenshots/light.png)
 
 
 #### Disclaimer:
