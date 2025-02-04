@@ -2,12 +2,9 @@ use crate::fl;
 use cosmic::app::Core;
 use cosmic::iced::Alignment::Center;
 use cosmic::iced::Length::{Fill, Shrink};
-use cosmic::iced::Limits;
-use cosmic::iced::Pixels;
-use cosmic::iced_core::window::Id;
 use cosmic::iced_widget::text::Shaping::Advanced;
+use cosmic::iced_widget::text::Style;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
-use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::theme::iced::Slider;
 use cosmic::widget::text::heading;
 use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Row, Space};
@@ -235,7 +232,11 @@ impl Application for CosmicNoise {
             .align_y(Center);
         let main_content = Column::new()
             .push(nav_row)
-            .push_maybe(self.error.is_some().then(|| text(fl!("not-found"))))
+            .push_maybe(self.error.is_some().then(|| {
+                text(fl!("not-found")).class(style::Text::Custom(|t| Style {
+                    color: Some(t.cosmic().warning_text_color().into()),
+                }))
+            }))
             .push(horizontal_rule(6))
             .push(horizontal_space().height(5))
             .push(scrollable(row![content].push(Space::new(18, 1))))
