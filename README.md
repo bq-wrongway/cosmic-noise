@@ -2,6 +2,11 @@
 
 Applet for playing background noise, heavily inspired by Blanket
 
+## Galery 
+
+<![dark](https://ibb.co/nSwzHgx)> <![light](https://ibb.co/mVMhMtvg)>
+
+
 #### Disclaimer:
 At some point this will be distributed as flatpak / deb file, untill then best way to install is to download repo and build binary with 
 
