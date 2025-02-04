@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use app::CosmicNoise;
+use cosmic::iced::Size;
+
 /// The `app` module is used by convention to indicate the main component of our application.
 mod app;
+mod config;
 mod i18n;
 mod utils;
-mod config;
-
 
 /// The `cosmic::app::run()` function is the starting point of your application.
 /// It takes two arguments:
@@ -22,5 +22,14 @@ fn main() -> cosmic::iced::Result {
 
     //in case i decide to change this to full fledget app
     // let settings = cosmic::app::Settings::default();
-    cosmic::applet::run::<CosmicNoise>(())
+    // cosmic::applet::run::<CosmicNoise>(())
+    let settings = cosmic::app::Settings::default()
+        .size(Size {
+            width: 150. * 3.5,
+            height: 75. * 5.,
+        })
+        .resizable(Some(0.));
+
+    // Starts the application's event loop with `()` as the application's flags.
+    cosmic::app::run::<app::CosmicNoise>(settings, ())
 }

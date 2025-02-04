@@ -10,9 +10,7 @@ use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::iced_winit::commands::popup::{destroy_popup, get_popup};
 use cosmic::theme::iced::Slider;
 use cosmic::widget::text::heading;
-use cosmic::widget::{
-    container, flex_row, horizontal_space, mouse_area, slider, Column, Row, Space,
-};
+use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Row, Space};
 use cosmic::{style, Application, Element, Task};
 use kira::{
     sound::{
@@ -43,7 +41,7 @@ const LINEAR_TWEEN: Tween = Tween {
 // #[derive(Clone, Default)]
 pub struct CosmicNoise {
     core: Core,
-    popup: Option<Id>,
+    // popup: Option<Id>,
     manager: Option<AudioManager>,
     track_list: Vec<NoiseTrack>,
     currently_playing: HashMap<usize, StreamingSoundHandle<FromFileError>>,
@@ -53,7 +51,7 @@ pub struct CosmicNoise {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    TogglePopup,
+    // TogglePopup,
     // PopupClosed(Id),
     Play(usize),
     VolumeChanged((f32, usize)),
@@ -83,7 +81,7 @@ impl Application for CosmicNoise {
     ) -> (CosmicNoise, cosmic::Task<cosmic::app::Message<Message>>) {
         let cosmic_noise = CosmicNoise {
             core,
-            popup: None,
+            // popup: None,
             manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).ok(),
             track_list: files::load_data().unwrap_or_default(),
             currently_playing: HashMap::new(),
@@ -132,33 +130,37 @@ impl Application for CosmicNoise {
                 }
             },
             Message::VolumeChanged(level) => {
-                println!("{:?}", level);
                 let (f, s) = level;
 
                 match self.currently_playing.get_mut(&s) {
                     Some(t) => {
                         t.set_volume(f, Tween::default());
                         self.track_list[s].volume_level = f;
+                        log::info!(
+                            "Volume changed to {} for the track {}",
+                            f,
+                            self.track_list[s].name
+                        );
                     }
                     None => {
                         log::info!("Could not change the volume!");
                     }
                 }
             }
-            Message::TogglePopup => {
-                return if let Some(p) = self.popup.take() {
-                    destroy_popup(p)
-                } else {
-                    let new_id = cosmic::iced_core::window::Id::unique();
-                    self.popup.replace(new_id);
-                    let mut popup_settings =
-                        self.core
-                            .applet
-                            .get_popup_settings(Id::RESERVED, new_id, None, None, None);
-                    popup_settings.positioner.size_limits = Limits::NONE;
-                    get_popup(popup_settings)
-                };
-            }
+            // Message::TogglePopup => {
+            //     return if let Some(p) = self.popup.take() {
+            //         destroy_popup(p)
+            //     } else {
+            //         let new_id = cosmic::iced_core::window::Id::unique();
+            //         self.popup.replace(new_id);
+            //         let mut popup_settings =
+            //             self.core
+            //                 .applet
+            //                 .get_popup_settings(Id::RESERVED, new_id, None, None, None);
+            //         popup_settings.positioner.size_limits = Limits::NONE;
+            //         get_popup(popup_settings)
+            //     };
+            // }
             // Message::PopupClosed(id) => {
             //     if self.popup.as_ref() == Some(&id) {
             //         self.popup = None;
@@ -202,20 +204,7 @@ impl Application for CosmicNoise {
 
     fn view(&self) -> Element<Self::Message> {
         //how to load icon, from system icons, but still fallback to custom one in case of error
-        self.core
-            .applet
-            // .icon_button_from_handle(Handle {
-            //     symbolic: true,
-            //     data: widget::icon::Data::Svg(svg::Handle::from_path("//pathto")),
-            // })
-            .icon_button("io.github.bqwrongway.wave-symbolic")
-            .on_press(Message::TogglePopup)
-            .into()
-    }
-
-    fn view_window(&self, _id: Id) -> Element<Self::Message> {
-        //need to pay attention to flex row, since its inside of scrollable it might need to be wrapped by the container (no width/noheight settigns)
-        let content = flex_row(get_elements(&self.track_list)).spacing(5);
+        let content = row(get_elements(&self.track_list)).spacing(5).wrap();
 
         let play_pause = row![
             mouse_area(container(
@@ -237,7 +226,7 @@ impl Application for CosmicNoise {
                 .on_press(Message::StopAll),
             )
             .push(horizontal_space())
-            .push(text(fl!("app-title")))
+            .push(text(""))
             .push(horizontal_space())
             .push(play_pause)
             .width(Fill)
@@ -246,6 +235,7 @@ impl Application for CosmicNoise {
             .align_y(Center);
         let main_content = Column::new()
             .push(nav_row)
+            .push_maybe(self.error.is_some().then(|| text(fl!("not-found"))))
             .push(horizontal_rule(6))
             .push(horizontal_space().height(5))
             .push(scrollable(row![content].push(Space::new(18, 1))))
@@ -253,21 +243,65 @@ impl Application for CosmicNoise {
             .height(MAX_HEIGHT * 5.)
             .padding(10);
 
-        self.core
-            .applet
-            .popup_container(match self.error {
-                Some(_) => Column::new()
-                    .push(text(fl!("not-found")).size(Pixels::from(20)))
-                    .width(400)
-                    .height(400)
-                    .padding(40.),
-                None => main_content,
-            })
-            .auto_width(true)
-            .auto_height(true)
-            .into()
+        main_content.into()
     }
 }
+
+//     fn view_window(&self, _id: Id) -> Element<Self::Message> {
+//         //need to pay attention to flex row, since its inside of scrollable it might need to be wrapped by the container (no width/noheight settigns)
+//         let content = row(get_elements(&self.track_list)).spacing(5).wrap();
+
+//         let play_pause = row![
+//             mouse_area(container(
+//                 cosmic::widget::icon::from_name("io.github.bqwrongway.pause-symbolic",).size(20)
+//             ))
+//             .on_press(Message::PauseAll),
+//             mouse_area(container(
+//                 cosmic::widget::icon::from_name("io.github.bqwrongway.play-symbolic",).size(20)
+//             ))
+//             .on_press(Message::ResumeAll)
+//         ]
+//         .push(Space::new(10, 5))
+//         .spacing(10);
+//         let nav_row = Row::new()
+//             .push(
+//                 mouse_area(container(
+//                     cosmic::widget::icon::from_name("io.github.bqwrongway.stop-symbolic").size(20),
+//                 ))
+//                 .on_press(Message::StopAll),
+//             )
+//             .push(horizontal_space())
+//             .push(text(fl!("app-title")))
+//             .push(horizontal_space())
+//             .push(play_pause)
+//             .width(Fill)
+//             .height(Shrink)
+//             .padding(5)
+//             .align_y(Center);
+//         let main_content = Column::new()
+//             .push(nav_row)
+//             .push(horizontal_rule(6))
+//             .push(horizontal_space().height(5))
+//             .push(scrollable(row![content].push(Space::new(18, 1))))
+//             .width(MAX_WIDTH * 4.)
+//             .height(MAX_HEIGHT * 5.)
+//             .padding(10);
+
+//         self.core
+//             .applet
+//             .popup_container(match self.error {
+//                 Some(_) => Column::new()
+//                     .push(text(fl!("not-found")).size(Pixels::from(20)))
+//                     .width(400)
+//                     .height(400)
+//                     .padding(40.),
+//                 None => main_content,
+//             })
+//             .auto_width(true)
+//             .auto_height(true)
+//             .into()
+//     }
+// }
 
 //need to deal with styling and global pause  resume
 //maybe check some cursive fonts for the text

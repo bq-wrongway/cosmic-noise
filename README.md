@@ -1,6 +1,9 @@
 # Cosmic Noise
 
-Applet for playing background noise, heavily inspired by Blanket
+Application for playing background noise, heavily inspired by Blanket
+
+### Info
+This branch is for standalone application instead of the applet
 
 #### Disclaimer:
 At some point this will be distributed as flatpak / deb file, untill then best way to install is to download repo and build binary with 
