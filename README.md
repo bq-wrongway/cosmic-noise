@@ -1,6 +1,7 @@
 # Cosmic Noise
 
 Applet for playing background noise, heavily inspired by Blanket
+If you want to use standalone app and not the applet, please build from "standalone branch"!
 
 ## Galery 
 
