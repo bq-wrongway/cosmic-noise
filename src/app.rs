@@ -3,7 +3,6 @@ use cosmic::app::Core;
 use cosmic::iced::Alignment::Center;
 use cosmic::iced::Length::{Fill, Shrink};
 use cosmic::iced::Limits;
-use cosmic::iced::Pixels;
 use cosmic::iced_core::window::Id;
 use cosmic::iced_widget::text::Shaping::Advanced;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
@@ -53,6 +52,7 @@ pub struct CosmicNoise {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Loaded(Result<Vec<NoiseTrack>, Error>),
     TogglePopup,
     // PopupClosed(Id),
     Play(usize),
@@ -85,14 +85,19 @@ impl Application for CosmicNoise {
             core,
             popup: None,
             manager: AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).ok(),
-            track_list: files::load_data().unwrap_or_default(),
+            track_list: vec![],
             currently_playing: HashMap::new(),
             state: PlaybackState::Stopped,
             error: None,
             // ..Default::default()batch
         };
 
-        (cosmic_noise, Task::none())
+        (
+            cosmic_noise,
+            Task::perform(files::load_data(), |f| {
+                cosmic::app::Message::App(Message::Loaded(f))
+            }),
+        )
     }
 
     fn header_center(&self) -> Vec<Element<Self::Message>> {
@@ -105,6 +110,10 @@ impl Application for CosmicNoise {
         }
 
         match message {
+            Message::Loaded(v) => match v {
+                Ok(tracks) => self.track_list = tracks,
+                Err(e) => self.error = Some(e),
+            },
             Message::Play(i) => match self.currently_playing.get_mut(&i) {
                 Some(h) => match h.state() {
                     PlaybackState::Playing => {
@@ -246,6 +255,16 @@ impl Application for CosmicNoise {
             .align_y(Center);
         let main_content = Column::new()
             .push(nav_row)
+            .push_maybe(self.error.is_some().then(|| {
+                text(fl!("not-found"))
+                    .class(style::Text::Custom(|t| text::Style {
+                        color: Some(t.cosmic().destructive_text_color().into()),
+                    }))
+                    .size(14.)
+                    .width(Fill)
+                    .align_x(Center)
+                    .wrapping(text::Wrapping::Word)
+            }))
             .push(horizontal_rule(6))
             .push(horizontal_space().height(5))
             .push(scrollable(row![content].push(Space::new(18, 1))))
@@ -255,14 +274,7 @@ impl Application for CosmicNoise {
 
         self.core
             .applet
-            .popup_container(match self.error {
-                Some(_) => Column::new()
-                    .push(text(fl!("not-found")).size(Pixels::from(20)))
-                    .width(400)
-                    .height(400)
-                    .padding(40.),
-                None => main_content,
-            })
+            .popup_container(main_content)
             .auto_width(true)
             .auto_height(true)
             .into()
@@ -342,7 +354,7 @@ fn uppercase_first(data: &str) -> String {
     }
     result
 }
-
+#[derive(Debug, Clone)]
 pub enum Error {
     FileSystem,
     PlayBack,
