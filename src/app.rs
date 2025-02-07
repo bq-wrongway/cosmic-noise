@@ -7,8 +7,8 @@ use cosmic::iced_widget::text::Style;
 use cosmic::iced_widget::{horizontal_rule, row, scrollable, text};
 use cosmic::theme::iced::Slider;
 use cosmic::widget::text::heading;
-use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Space};
-use cosmic::{style, Application, Element, Task};
+use cosmic::widget::{container, horizontal_space, mouse_area, slider, Column, Space, Text};
+use cosmic::{style, Application, Element, Task, Theme};
 use kira::{
     sound::{
         streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings},
@@ -144,7 +144,7 @@ impl Application for CosmicNoise {
                             let (index, handle) = result;
                             self.currently_playing.insert(index, handle);
                         }
-                        Err(_e) => self.error = Some(Error::PlayBack),
+                        Err(err) => self.error = Some(err),
                     }
 
                     self.track_list[i].state = PlaybackState::Playing;
@@ -207,44 +207,10 @@ impl Application for CosmicNoise {
     fn view(&self) -> Element<Self::Message> {
         //how to load icon, from system icons, but still fallback to custom one in case of error
         let content = row(get_elements(&self.track_list)).spacing(5).wrap();
-        // let error_container: cosmic::iced_core::widget::Text<Theme, Renderer> =
-        //     match self.error.as_ref().unwrap() {
-        //         Error::FileSystem => text(fl!("not-found")),
-        //         Error::PlayBack => text("a"),
-        //         Error::Handle => text("a"),
-        //     };
-
-        // let play_pause = row![
-        //     mouse_area(container(
-        //         cosmic::widget::icon::from_name("io.github.bqwrongway.pause-symbolic",).size(20)
-        //     ))
-        //     .on_press(Message::PauseAll),
-        //     mouse_area(container(
-        //         cosmic::widget::icon::from_name("io.github.bqwrongway.play-symbolic",).size(20)
-        //     ))
-        //     .on_press(Message::ResumeAll)
-        // ]
-        // .push(Space::new(10, 5))
-        // .spacing(10);
-        // let nav_row = Row::new()
-        //     .push(
-        //         mouse_area(container(
-        //             cosmic::widget::icon::from_name("io.github.bqwrongway.stop-symbolic").size(20),
-        //         ))
-        //         .on_press(Message::StopAll),
-        //     )
-        //     .push(horizontal_space())
-        //     .push(text(""))
-        //     .push(horizontal_space())
-        //     .push(play_pause)
-        //     .width(Fill)
-        //     .height(Shrink)
-        //     .padding(5)
-        //     .align_y(Center);
         let main_content = Column::new()
-            // .push(nav_row)
             .push_maybe(self.error.is_some().then(|| {
-                text(fl!("not-found"))
+                // text(fl!("not-found"))
+                get_error_id(self.error.as_ref().unwrap())
                     .class(style::Text::Custom(|t| Style {
                         color: Some(t.cosmic().destructive_text_color().into()),
                     }))
@@ -264,13 +230,19 @@ impl Application for CosmicNoise {
     }
 }
 
-// fn get_error_id<'a>(error: Error) -> Text<'a, Theme> {
-//     match error {
-//         Error::FileSystem => text(error.to_string()),
-//         Error::PlayBack => text(error.to_string()),
-//         Error::Handle => text(fl!("pb-error")),
-//     }
-// }
+fn get_error_id<'a>(error: &Error) -> Text<'a, Theme> {
+    match error {
+        Error::FileSystem => text(error.to_string()),
+        Error::PlayBack => text(error.to_string()),
+        Error::Handle => text(fl!("pb-error")),
+        Error::UnknownDuration => text(error.to_string()),
+        Error::NoDefaultTrack => text(error.to_string()),
+        Error::IOError => text(error.to_string()),
+        Error::SymphoniaError => text(error.to_string()),
+        Error::UnsuportedChannelConfig => text(error.to_string()),
+        Error::UnknownSampleRate => text(error.to_string()),
+    }
+}
 
 //need to deal with styling and global pause  resume
 //maybe check some cursive fonts for the text
@@ -350,6 +322,12 @@ pub enum Error {
     FileSystem,
     PlayBack,
     Handle,
+    UnknownDuration,
+    NoDefaultTrack,
+    IOError,
+    SymphoniaError,
+    UnsuportedChannelConfig,
+    UnknownSampleRate,
 }
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -375,9 +353,13 @@ pub fn play_sound(
             },
             None => Err(Error::PlayBack),
         },
-        Err(e) => {
-            log::error!("Failed to play sound : {e}");
-            Err(Error::PlayBack)
-        }
+        Err(e) => match e {
+            FromFileError::NoDefaultTrack => Err(Error::NoDefaultTrack),
+            FromFileError::UnknownSampleRate => Err(Error::UnknownSampleRate),
+            FromFileError::UnknownDuration => Err(Error::UnknownDuration),
+            FromFileError::UnsupportedChannelConfiguration => Err(Error::UnsuportedChannelConfig),
+            FromFileError::IoError(_error) => Err(Error::IOError),
+            FromFileError::SymphoniaError(_error) => Err(Error::SymphoniaError),
+        },
     }
 }

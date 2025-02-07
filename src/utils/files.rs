@@ -15,32 +15,48 @@ pub struct NoiseTrack {
     pub volume_level: f32,
     pub state: PlaybackState,
 }
-//need ti handle error better
 pub fn get_stem(name: &Path) -> String {
+    log::warn!("loading path {}", name.to_string_lossy());
     name.file_stem()
-        .unwrap_or(OsStr::new("###"))
+        .unwrap_or_default()
         .to_os_string()
         .into_string()
-        .unwrap_or(String::from("$$$"))
+        .unwrap_or_default()
 }
 
 // error handling?
 pub async fn load_data() -> Result<Vec<NoiseTrack>, app::Error> {
     let d = get_local_dir().ok_or(Error::FileSystem)?;
-
     walkdir::WalkDir::new(d)
+        .max_depth(1)
+        .follow_links(false)
         .into_iter()
-        .filter_map(|f| f.ok())
-        .filter(|e| e.path().has_extension(ALLOWED_EXT))
-        .map(|e| {
-            Ok(NoiseTrack {
-                name: get_stem(e.path()),
-                path: e.path().to_path_buf(),
-                volume_level: 2.,
-                state: PlaybackState::Stopped,
-            })
+        .filter_map(|it| match it {
+            Ok(entry) => {
+                let path = entry.path();
+                (path.is_file() && path.has_extension(ALLOWED_EXT)).then(|| {
+                    Ok(NoiseTrack {
+                        name: get_stem(path),
+                        path: path.to_path_buf(),
+                        volume_level: 2.,
+                        state: PlaybackState::Stopped,
+                    })
+                })
+            }
+            Err(_) => Some(Err(Error::FileSystem)),
         })
         .collect()
+    // .filter_map(|f| f.ok())
+    // .filter(|e| e.path().has_extension(ALLOWED_EXT))
+    // .map(|e| {
+    // Ok(NoiseTrack {
+    //     name: get_stem(e.path()),
+    //     path: e.path().to_path_buf(),
+    //     volume_level: 2.,
+    //     state: PlaybackState::Stopped,
+    // })
+    // })
+    // .collect()
 }
 //check if resource directories exist and return the path of one that does
 
