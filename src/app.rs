@@ -80,7 +80,7 @@ impl Application for CosmicNoise {
     fn init(
         core: Core,
         _flags: Self::Flags,
-    ) -> (CosmicNoise, cosmic::Task<cosmic::app::Message<Message>>) {
+    ) -> (CosmicNoise, cosmic::Task<cosmic::Action<Message>>) {
         let cosmic_noise = CosmicNoise {
             core,
             popup: None,
@@ -95,7 +95,8 @@ impl Application for CosmicNoise {
         (
             cosmic_noise,
             Task::perform(files::load_data(), |f| {
-                cosmic::app::Message::App(Message::Loaded(f))
+                cosmic::Action::App(Message::Loaded(f))
+                // Message::Loaded(f)
             }),
         )
     }
@@ -104,7 +105,7 @@ impl Application for CosmicNoise {
         vec![heading(fl!("app-title")).into()]
     }
 
-    fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<Self::Message>> {
+    fn update(&mut self, message: Self::Message) -> Task<cosmic::Action<Self::Message>> {
         match message {
             Message::Loaded(v) => match v {
                 Ok(tracks) => self.track_list = tracks,

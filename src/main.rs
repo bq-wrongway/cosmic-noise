@@ -3,10 +3,9 @@
 use app::CosmicNoise;
 /// The `app` module is used by convention to indicate the main component of our application.
 mod app;
+mod config;
 mod i18n;
 mod utils;
-mod config;
-
 
 /// The `cosmic::app::run()` function is the starting point of your application.
 /// It takes two arguments:
@@ -14,7 +13,7 @@ mod config;
 /// - `()` is the flags that your app needs to use before it starts.
 ///  If your app does not need any flags, you can pass in `()`.
 fn main() -> cosmic::iced::Result {
-    std::env::set_var("RUST_LOG", "warn");
+    // std::env::set_var("RUST_LOG", "warn");
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
     env_logger::init();
     // Enable localizations to be applied.
