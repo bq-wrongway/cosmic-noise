@@ -14,7 +14,7 @@ mod utils;
 /// - `()` is the flags that your app needs to use before it starts.
 ///  If your app does not need any flags, you can pass in `()`.
 fn main() -> cosmic::iced::Result {
-    std::env::set_var("RUST_LOG", "warn");
+    // std::env::set_var("RUST_LOG", "warn");
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
     env_logger::init();
     // Enable localizations to be applied.
