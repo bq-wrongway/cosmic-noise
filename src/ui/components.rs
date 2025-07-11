@@ -185,7 +185,7 @@ pub fn loading_indicator<'a>() -> Element<'a, dragwin::Message> {
 }
 
 /// Create a toolbar component
-pub fn toolbar<'a>() -> Element<'a, dragwin::Message> {
+pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
     row![
         //in this case tool bar is my button
         iced::widget::Space::new(15, 10),
@@ -193,15 +193,33 @@ pub fn toolbar<'a>() -> Element<'a, dragwin::Message> {
         action(
             pause_icon(),
             text(fl!("pause-all-icon")),
-            Some(Message::PauseAll)
+            Some(Message::PauseAll),
         ),
         action(stop_icon(), text(fl!("stop-icon")), Some(Message::StopAll)),
+        iced::widget::Space::new(10, 10),
+        slider(
+            0.0..=100.0,
+            db_to_percentage(master_volume),
+            |x| dragwin::Message::MasterVolumeChanged(percentage_to_db(x)),
+        )
+        .width(80)
+        .step(1.0)
+        .height(8)
+        .style(styles::volume_slider_style),
+        text(format!("{}%", db_to_percentage(master_volume) as u8))
+            .size(10)
+            .align_x(iced::alignment::Horizontal::Center),
         horizontal_space(),
-        text(fl!("app-title")).style(|t: &Theme| {
-            iced::widget::text::Style {
-                color: Some(t.extended_palette().primary.base.color),
-            }
-        }),
+        row![
+            text(fl!("app-title")).style(|t: &Theme| {
+                iced::widget::text::Style {
+                    color: Some(t.extended_palette().primary.base.color),
+                }
+            }),
+           
+        ]
+        .align_y(Center)
+        .spacing(5),
         horizontal_space(),
         action(settings_icon(), text("Settings"), Some(Message::Settings)),
         action(close_icon(), text(fl!("close-icon")), Some(Message::Close)),

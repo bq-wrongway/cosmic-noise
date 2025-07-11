@@ -67,6 +67,8 @@ pub enum AudioEvent {
     VolumeChanged { track_id: usize, volume: f32 },
     /// Audio system error occurred
     Error(AudioError),
+    /// Master volume changed
+    MasterVolumeChanged(f32),
 }
 
 impl AudioSystem {
@@ -132,6 +134,11 @@ impl AudioSystem {
             .unwrap_or(PlaybackState::Stopped)
     }
 
+    /// Get the current master volume
+    pub fn master_volume(&self) -> f32 {
+        self.default_settings.master_volume
+    }
+
     /// Process an audio command
     pub fn process_command(
         &mut self,
@@ -166,8 +173,24 @@ impl AudioSystem {
                 events.extend(self.resume_all_tracks(tracks)?);
             }
             AudioCommand::SetMasterVolume(volume) => {
-                // TODO: Implement master volume control
+                // Implement master volume control
                 log::info!("Master volume set to: {}", volume);
+                
+                // Update the master volume in settings
+                self.default_settings.master_volume = volume;
+                
+                // Apply master volume to all currently playing tracks
+                let tween = self.create_tween();
+                for (track_id, handle) in self.playing_handles.iter_mut() {
+                    // Calculate effective volume: combine track volume with master volume
+                    // In dB, we add the values: track_volume + master_volume
+                    let effective_volume = tracks[*track_id].volume_level + volume;
+                    // Clamp to valid range
+                    let clamped_volume = effective_volume.clamp(-60.0, 0.0);
+                    handle.set_volume(clamped_volume, tween);
+                }
+                
+                events.push(AudioEvent::MasterVolumeChanged(volume));
             }
         }
 
@@ -230,9 +253,14 @@ impl AudioSystem {
         let track_volume = tracks[track_id].volume_level;
         let track_name = tracks[track_id].name.clone();
 
+        // Calculate effective volume: combine track volume with master volume
+        let effective_volume = track_volume + self.default_settings.master_volume;
+        // Clamp to valid range
+        let clamped_volume = effective_volume.clamp(-60.0, 0.0);
+
         // Create streaming sound settings
         let settings = StreamingSoundSettings::new()
-            .volume(track_volume)
+            .volume(clamped_volume)
             .loop_region(self.default_settings.loop_region.clone().unwrap_or(0.0..));
 
         // Load and play the sound
@@ -347,7 +375,11 @@ impl AudioSystem {
 
         let tween = self.create_tween();
         if let Some(handle) = self.playing_handles.get_mut(&track_id) {
-            handle.set_volume(volume, tween);
+            // Calculate effective volume: combine track volume with master volume
+            let effective_volume = volume + self.default_settings.master_volume;
+            // Clamp to valid range
+            let clamped_volume = effective_volume.clamp(-60.0, 0.0);
+            handle.set_volume(clamped_volume, tween);
             tracks[track_id].volume_level = volume;
             events.push(AudioEvent::VolumeChanged { track_id, volume });
             log::info!(

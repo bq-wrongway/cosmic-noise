@@ -28,6 +28,7 @@ pub enum Message {
     Close,
     Play(usize),
     VolumeChanged((f32, usize)),
+    MasterVolumeChanged(f32),
     StopAll,
     PauseAll,
     ResumeAll,
@@ -75,6 +76,10 @@ pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
             cnoise.process_audio_command(AudioCommand::SetVolume { track_id, volume });
             Task::none()
         }
+        Message::MasterVolumeChanged(volume) => {
+            cnoise.process_audio_command(AudioCommand::SetMasterVolume(volume));
+            Task::none()
+        }
         Message::StopAll => {
             cnoise.process_audio_command(AudioCommand::StopAll);
             Task::none()
@@ -116,14 +121,16 @@ pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
 
 pub fn view<'a>(
     content: Element<'a, Message>,
-    _cnoise: &CosmicNoise,
+    cnoise: &CosmicNoise,
     //doing this also does not work
     // toolbar: Element<'a, crate::Message>,
 ) -> Element<'a, Message> {
+    let master_volume = cnoise.audio_system.master_volume();
+    
     let base = iced::widget::container(
         iced::widget::column![
             mouse_area(
-                iced::widget::container(toolbar())
+                iced::widget::container(toolbar(master_volume))
                     .align_y(Center)
                     .width(Fill)
                     .height(40)

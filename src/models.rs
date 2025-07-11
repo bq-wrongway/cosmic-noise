@@ -189,7 +189,7 @@ impl Default for AudioSettings {
             buffer_size: None,
             max_concurrent_tracks: 16,
             normalize_audio: false,
-            master_volume: 0.0, // 0 dB master volume
+            master_volume: DEFAULT_VOLUME_DB, // Start at 50% like other sliders
         }
     }
 }
