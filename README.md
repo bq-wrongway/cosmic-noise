@@ -1,49 +1,86 @@
 # Cosmic Noise
 
-Applet for playing background noise, heavily inspired by Blanket.
+A beautiful ambient noise player built with Rust and Iced, heavily inspired by Blanket.
 
-If you want to use standalone app and not the applet, please build from "standalone branch"!
+## Features
 
-## Galery 
+- 🎵 Multiple ambient sound tracks (rain, waves, birds, etc.)
+- 🎚️ Individual volume control for each track
+- 🎨 Multiple themes (Tokyo Night, Gruvbox, Catppuccin)
+- 📦 Flatpak packaging for easy installation
+- 🖥️ Cross-platform support
 
-![dark](resources/screenshots/dark.png) ![light](resources/screenshots/light.png)
+## Installation
 
+### Flatpak (Recommended)
 
-#### Disclaimer:
-At some point this will be distributed as flatpak / deb file, untill then best way to install is to download repo and build binary with 
+```bash
+# Build and install locally
+just flatpak-install
 
+# Run the app
+just flatpak-run
+```
 
-### How to install
+### From Source
 
-```rust
+```bash
+# Clone the repository
+git clone https://github.com/your-username/cosmic-noise.git
+cd cosmic-noise
+
+# Build the application
 cargo build --release
-```
-then just copy binary to some location on your computed that is part of the path.
 
-Sadly, this is still not enough, you will need to for now manually copy icons and sounds to required places :
-
-
-```
- there are 4 icons under resource/icons folder of this repo, they need to go to :
-/usr/share/icons/Pop/scalable/actions
-(!!! you need to copy icons themself not the folder)
-
-and folder sounds (also found under resources folder of this repo) should be copied either to 
-$HOME/.local/share/cosmic-noise
-$HOME/.config/cosmic-noise
-
+# Run the application
+./target/release/cosmic_noise
 ```
 
-Last but not least, this needs to be run as an applet, so you need to copy 
+## Adding Your Own Sounds
 
-```
-io.github.bq-wrongway.CosmicNoise.desktop
- ```
-to 
+Place your audio files in one of these directories:
+- `~/.local/share/cosmic-noise/sounds/`
+- `~/.config/cosmic-noise/sounds/`
 
-```
-/usr/share/applications/
+Supported formats: MP3, OGG, FLAC, WAV
+
+## Development
+
+### Prerequisites
+- Rust 1.85.0 or later
+- Flatpak SDK (for Flatpak builds)
+
+### Building for Flatpak
+```bash
+# Build Flatpak package
+just flatpak-build
+
+# Clean build artifacts
+just flatpak-clean
+
+# Export bundle for distribution
+just flatpak-bundle
 ```
 
-After this you should be good to go, you just need to add applet to your panel, which if everything was done correctly you will be able to do from cosmic settins.
+### Local Development
+```bash
+# Run in debug mode
+cargo run
+
+# Run with logging
+RUST_LOG=debug cargo run
+```
+
+## Gallery
+
+![Dark Theme](resources/screenshots/dark.png) ![Light Theme](resources/screenshots/light.png)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Sound files are licensed under various Creative Commons licenses - see [SOUNDS_LICENSING.md](SOUNDS_LICENSING.md) for details
+- Inspired by [Blanket](https://github.com/rafaelmardojai/blanket)
 
