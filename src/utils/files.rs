@@ -1,20 +1,11 @@
-use kira::sound::PlaybackState;
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
 };
 
-use crate::app::{self, Error};
+use crate::errors::{AppError, FileSystemError};
+use crate::models::{NoiseTrack, SOUND_DIRECTORY, SUPPORTED_EXTENSIONS};
 
-const ALLOWED_EXT: &[&str; 4] = &["mp3", "ogg", "flac", "wav"];
-const SOUND_FILE: &str = "cosmic-noise/sounds/";
-#[derive(Debug, Clone)]
-pub struct NoiseTrack {
-    pub name: String,
-    pub path: PathBuf,
-    pub volume_level: f32,
-    pub state: PlaybackState,
-}
 pub fn get_stem(name: &Path) -> String {
     log::warn!("loading path {}", name.to_string_lossy());
     name.file_stem()
@@ -24,8 +15,9 @@ pub fn get_stem(name: &Path) -> String {
         .unwrap_or_default()
 }
 
-pub async fn load_data() -> Result<Vec<NoiseTrack>, app::Error> {
-    let d = get_local_dir().ok_or(Error::FileSystem)?;
+// error handling?
+pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
+    let d = get_local_dir().ok_or(AppError::FileSystem(FileSystemError::DirectoryNotFound))?;
     walkdir::WalkDir::new(d)
         .max_depth(1)
         .follow_links(false)
@@ -33,16 +25,12 @@ pub async fn load_data() -> Result<Vec<NoiseTrack>, app::Error> {
         .filter_map(|it| match it {
             Ok(entry) => {
                 let path = entry.path();
-                (path.is_file() && path.has_extension(ALLOWED_EXT)).then(|| {
-                    Ok(NoiseTrack {
-                        name: get_stem(path),
-                        path: path.to_path_buf(),
-                        volume_level: 2.,
-                        state: PlaybackState::Stopped,
-                    })
-                })
+                (path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS))
+                    .then(|| Ok(NoiseTrack::new(get_stem(path), path.to_path_buf())))
             }
-            Err(_) => Some(Err(Error::FileSystem)),
+            Err(_) => Some(Err(AppError::FileSystem(
+                FileSystemError::DirectoryReadError,
+            ))),
         })
         .collect()
     // .filter_map(|f| f.ok())
@@ -72,8 +60,8 @@ fn get_local_dir() -> Option<PathBuf> {
 // checks if users .config contains directory cosmic-noise/sounds
 fn config_dir_exists() -> Option<PathBuf> {
     match dirs::config_local_dir() {
-        Some(s) => match s.join(SOUND_FILE).exists() {
-            true => Some(s.join(SOUND_FILE)),
+        Some(s) => match s.join(SOUND_DIRECTORY).exists() {
+            true => Some(s.join(SOUND_DIRECTORY)),
             false => None,
         },
         None => None,
@@ -82,8 +70,8 @@ fn config_dir_exists() -> Option<PathBuf> {
 // checks if users .local/share contains directory cosmic-noise/sounds
 fn data_dir_exists() -> Option<PathBuf> {
     match dirs::data_local_dir() {
-        Some(s) => match s.join(SOUND_FILE).exists() {
-            true => Some(s.join(SOUND_FILE)),
+        Some(s) => match s.join(SOUND_DIRECTORY).exists() {
+            true => Some(s.join(SOUND_DIRECTORY)),
             false => None,
         },
         None => None,

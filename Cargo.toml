@@ -1,15 +1,22 @@
 [package]
-name = "cosmic-noise"
-version = "0.2.0"
-edition = "2021"
-license = "GPL-3.0"
-description = "Applet for playing background noise, heavility inspired by Blanket"
-repository = "https://github.com/bq-wrongway/cosmic-noise"
+name = "cosmic_noise"
+version = "0.1.0"
+edition = "2024"
 
-[build-dependencies]
-vergen = { version = "8", features = ["git", "gitcl"] }
+[[bin]]
+name = "cosmic_noise"
+path = "src/main.rs"
 
 [dependencies]
+iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", features = [
+    "debug",
+    "image",
+    "canvas",
+    "tokio",
+    "advanced",
+] }
+# image = "0.25.6"
+# imageproc = "0.25.0"
 i18n-embed-fl = "0.9.3"
 rust-embed = "8.5.0"
 kira = "0.10.1"
@@ -17,25 +24,10 @@ dirs = "5.0.1"
 walkdir = "2.5.0"
 log = "0.4.25"
 env_logger = "0.11.6"
+zvariant_derive = "=5.5.1"
+confy = "0.6.1"
+serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.i18n-embed]
 version = "0.15"
 features = ["fluent-system", "desktop-requester"]
-
-[dependencies.libcosmic]
-git = "https://github.com/pop-os/libcosmic.git"
-# See https://github.com/pop-os/libcosmic/blob/master/Cargo.toml for available features.
-features = [
-    # Accessibility support
-    "a11y",
-    # Uses cosmic-settings-daemon to watch for config file changes
-    "dbus-config",
-    # Support creating additional application windows.
-    "applet",
-    # Uses tokio as the executor for the runtime
-    "tokio",
-    # Add Wayland support to winit
-    "wayland",
-    # GPU-accelerated rendering
-    "wgpu",
-]

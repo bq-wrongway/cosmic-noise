@@ -1,25 +1,49 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
-use app::CosmicNoise;
-/// The `app` module is used by convention to indicate the main component of our application.
 mod app;
+mod audio;
 mod config;
+mod errors;
 mod i18n;
+mod messages;
+mod models;
+mod ui;
 mod utils;
+use iced::{Color, Size, Theme, theme, window};
 
-/// The `cosmic::app::run()` function is the starting point of your application.
-/// It takes two arguments:
-/// - `settings` is a structure that contains everything relevant with your app's configuration, such as antialiasing, themes, icons, etc...
-/// - `()` is the flags that your app needs to use before it starts.
-///  If your app does not need any flags, you can pass in `()`.
-fn main() -> cosmic::iced::Result {
-    // std::env::set_var("RUST_LOG", "warn");
+use crate::app::{CosmicNoise, Message};
+use crate::models::AppTheme;
+use crate::ui::view::main_view;
+
+pub const SPACING: f32 = 5.0;
+
+pub fn main() -> iced::Result {
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
-    env_logger::init();
     // Enable localizations to be applied.
     i18n::init(&requested_languages);
 
-    //in case i decide to change this to full fledget app
-    // let settings = cosmic::app::Settings::default();
-    cosmic::applet::run::<CosmicNoise>(())
+    iced::application(CosmicNoise::new, CosmicNoise::update, CosmicNoise::view)
+        .font(include_bytes!("../assets/fonts/dragwin.ttf").as_slice())
+        .window(window::Settings {
+            transparent: true,
+            decorations: false,
+            size: Size::new(800., 650.),
+            visible: true,
+
+            ..Default::default()
+        })
+        .theme(|app: &CosmicNoise| match app.current_theme {
+            AppTheme::GruvboxDark => Theme::GruvboxDark,
+            AppTheme::Tokyo => Theme::TokyoNight,
+            AppTheme::Catppuccin => Theme::CatppuccinMacchiato,
+            AppTheme::GruvboxLight => Theme::GruvboxLight,
+        })
+        .style(|_, _| theme::Style {
+            background_color: Color::TRANSPARENT,
+            text_color: Color::WHITE,
+        })
+        .run()
+}
+impl CosmicNoise {
+    fn view(&self) -> iced::Element<Message> {
+        main_view(self)
+    }
 }
