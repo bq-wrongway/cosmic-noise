@@ -416,18 +416,13 @@ impl std::fmt::Display for AppTheme {
 }
 
 /// Application view states
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum View {
     /// Main player view with track grid
+    #[default]
     Player,
     /// Settings view with configuration options
     Settings,
-}
-
-impl Default for View {
-    fn default() -> Self {
-        View::Player
-    }
 }
 
 /// File system related settings
@@ -485,69 +480,6 @@ impl Default for WindowSettings {
             always_on_top: false,
         }
     }
-}
-
-/// Application state information
-/// Application lifecycle and state tracking
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AppState {
-    /// Current application phase
-    pub phase: AppPhase,
-    /// Last update timestamp
-    #[serde(skip, default = "std::time::Instant::now")]
-    pub last_update: std::time::Instant,
-    /// Application start time
-    #[serde(skip, default = "std::time::Instant::now")]
-    pub start_time: std::time::Instant,
-    /// Current error state
-    pub current_error: Option<String>,
-    /// Number of tracks loaded
-    pub tracks_loaded: usize,
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        let now = std::time::Instant::now();
-        Self {
-            phase: AppPhase::Initializing,
-            last_update: now,
-            start_time: now,
-            current_error: None,
-            tracks_loaded: 0,
-        }
-    }
-}
-
-impl AppState {
-    /// Get application uptime
-    pub fn uptime(&self) -> Duration {
-        self.last_update.duration_since(self.start_time)
-    }
-
-    /// Update the state timestamp
-    pub fn touch(&mut self) {
-        self.last_update = std::time::Instant::now();
-    }
-
-    /// Check if app is in a ready state
-    pub fn is_ready(&self) -> bool {
-        matches!(self.phase, AppPhase::Ready)
-    }
-}
-
-/// Application lifecycle phases
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum AppPhase {
-    /// Application is starting up
-    Initializing,
-    /// Loading tracks from filesystem
-    LoadingTracks,
-    /// Initializing audio system
-    InitializingAudio,
-    /// Application is ready for use
-    Ready,
-    /// Application is shutting down
-    Shutting,
 }
 
 // Constants used throughout the application
@@ -640,21 +572,6 @@ mod tests {
         assert_eq!(config.audio.default_volume, DEFAULT_VOLUME_DB);
         assert!(config.ui.show_volume_percentage);
         assert_eq!(config.window.width, 800.0);
-    }
-
-    #[test]
-    fn test_app_state() {
-        let mut state = AppState::default();
-        assert_eq!(state.phase, AppPhase::Initializing);
-        assert!(!state.is_ready());
-
-        state.phase = AppPhase::Ready;
-        assert!(state.is_ready());
-
-        let before = state.last_update;
-        std::thread::sleep(Duration::from_millis(1));
-        state.touch();
-        assert!(state.last_update > before);
     }
 
     #[test]

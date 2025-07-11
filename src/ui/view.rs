@@ -8,8 +8,8 @@ use crate::models::{NoiseTrack, View};
 use crate::ui::components::{empty_state, error_display, settings_view, spacer, track_card};
 use crate::utils::dragwin;
 
+use iced::Element;
 use iced::widget::{column, container, grid, row, scrollable};
-use iced::{Element, Length};
 
 /// Main view function that renders the entire application
 pub fn main_view(app: &CosmicNoise) -> Element<Message> {
@@ -58,34 +58,6 @@ fn tracks_grid(tracks: &[NoiseTrack]) -> Element<dragwin::Message> {
     .into()
 }
 
-/// Create a loading view for when tracks are being loaded
-pub fn loading_view<'a>() -> Element<'a, Message> {
-    container(
-        iced::widget::text("Loading tracks...")
-            .size(16)
-            .align_x(iced::alignment::Horizontal::Center),
-    )
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .center_x(Length::Fill)
-    .center_y(Length::Fill)
-    .into()
-}
-
-/// Create a minimal view for when the application is initializing
-pub fn initializing_view<'a>() -> Element<'a, Message> {
-    container(
-        iced::widget::text("Initializing Cosmic Noise...")
-            .size(18)
-            .align_x(iced::alignment::Horizontal::Center),
-    )
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .center_x(Length::Fill)
-    .center_y(Length::Fill)
-    .into()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,18 +90,6 @@ mod tests {
             NoiseTrack::new("track2".to_string(), PathBuf::from("/test/track2.mp3")),
         ];
         let _view = main_view(&app);
-        // Test passes if no panic occurs
-    }
-
-    #[test]
-    fn test_loading_view() {
-        let _view = loading_view();
-        // Test passes if no panic occurs
-    }
-
-    #[test]
-    fn test_initializing_view() {
-        let _view = initializing_view();
         // Test passes if no panic occurs
     }
 }

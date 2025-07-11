@@ -6,7 +6,7 @@
 use crate::audio::{AudioCommand, AudioEvent, AudioSystem};
 use crate::config::ConfigManager;
 use crate::errors::AppError;
-use crate::models::{AppStats, AppTheme, NoiseTrack, View};
+use crate::models::{AppTheme, NoiseTrack, View};
 
 use crate::utils::files;
 use iced::Task;
@@ -33,10 +33,6 @@ pub enum Message {
     DragWin(crate::utils::dragwin::Message),
     /// Track loading completion
     Loaded(Result<Vec<NoiseTrack>, AppError>),
-    /// Switch between views
-    SwitchView(View),
-    /// Change theme
-    ChangeTheme(AppTheme),
 }
 
 impl CosmicNoise {
@@ -46,7 +42,7 @@ impl CosmicNoise {
 
         // Load theme from configuration
         let current_theme = ConfigManager::load_theme();
-        info!("Loaded theme from configuration: {:?}", current_theme);
+        info!("Loaded theme from configuration: {current_theme:?}");
 
         let app = CosmicNoise {
             audio_system,
@@ -79,23 +75,6 @@ impl CosmicNoise {
                 }
                 Task::none()
             }
-            Message::SwitchView(view) => {
-                self.current_view = view;
-                Task::none()
-            }
-            Message::ChangeTheme(theme) => {
-                self.current_theme = theme;
-
-                // Save theme to configuration
-                if let Err(e) = ConfigManager::save_theme(theme) {
-                    error!("Failed to save theme to configuration: {}", e);
-                    self.error = Some(e);
-                } else {
-                    info!("Theme saved to configuration: {:?}", theme);
-                }
-
-                Task::none()
-            }
         }
     }
 
@@ -117,67 +96,6 @@ impl CosmicNoise {
                 vec![]
             }
         }
-    }
-
-    /// Get current application statistics
-    pub fn get_stats(&self) -> AppStats {
-        let audio_stats = self.audio_system.get_stats();
-        AppStats::from_audio_stats(&audio_stats, self.track_list.len(), self.error.is_some())
-    }
-
-    /// Check if the application is in a healthy state
-    pub fn is_healthy(&self) -> bool {
-        self.error.is_none() && self.audio_system.is_initialized()
-    }
-
-    /// Get current error message for display
-    pub fn error_message(&self) -> Option<String> {
-        self.error.as_ref().map(|e| e.to_string())
-    }
-
-    /// Clear current error state
-    pub fn clear_error(&mut self) {
-        self.error = None;
-    }
-
-    /// Reload tracks from the file system
-    pub fn reload_tracks(&mut self) -> Task<Message> {
-        Task::perform(files::load_data(), Message::Loaded)
-    }
-
-    /// Get track by index safely
-    pub fn get_track(&self, index: usize) -> Option<&NoiseTrack> {
-        self.track_list.get(index)
-    }
-
-    /// Get mutable track by index safely
-    pub fn get_track_mut(&mut self, index: usize) -> Option<&mut NoiseTrack> {
-        self.track_list.get_mut(index)
-    }
-
-    /// Get all tracks
-    pub fn tracks(&self) -> &[NoiseTrack] {
-        &self.track_list
-    }
-
-    /// Check if any tracks are currently playing
-    pub fn has_playing_tracks(&self) -> bool {
-        self.audio_system.get_stats().playing_tracks > 0
-    }
-
-    /// Stop all currently playing tracks
-    pub fn stop_all(&mut self) -> Vec<AudioEvent> {
-        self.process_audio_command(AudioCommand::StopAll)
-    }
-
-    /// Pause all currently playing tracks
-    pub fn pause_all(&mut self) -> Vec<AudioEvent> {
-        self.process_audio_command(AudioCommand::PauseAll)
-    }
-
-    /// Resume all paused tracks
-    pub fn resume_all(&mut self) -> Vec<AudioEvent> {
-        self.process_audio_command(AudioCommand::ResumeAll)
     }
 }
 
@@ -203,50 +121,5 @@ mod tests {
         let (app, _task) = CosmicNoise::new();
         assert!(app.track_list.is_empty());
         assert!(app.error.is_none());
-    }
-
-    #[test]
-    fn test_app_stats() {
-        let (app, _) = CosmicNoise::new();
-        let stats = app.get_stats();
-        assert_eq!(stats.total_tracks, 0);
-        assert_eq!(stats.loaded_tracks, 0);
-        assert_eq!(stats.playing_tracks, 0);
-        assert_eq!(stats.paused_tracks, 0);
-    }
-
-    #[test]
-    fn test_app_health() {
-        let (app, _) = CosmicNoise::new();
-        // App should be healthy initially (no errors)
-        // Audio initialization might fail in test environment, so we only check error state
-        assert!(app.error.is_none());
-    }
-
-    #[test]
-    fn test_app_stats_status_message() {
-        let stats = AppStats {
-            total_tracks: 5,
-            loaded_tracks: 5,
-            playing_tracks: 2,
-            paused_tracks: 0,
-            has_error: false,
-            audio_initialized: true,
-            uptime: Duration::from_secs(0),
-            memory_usage_mb: None,
-        };
-        assert_eq!(stats.status_message(), "Playing 2 tracks");
-
-        let stats = AppStats {
-            total_tracks: 0,
-            loaded_tracks: 0,
-            playing_tracks: 0,
-            paused_tracks: 0,
-            has_error: false,
-            audio_initialized: true,
-            uptime: Duration::from_secs(0),
-            memory_usage_mb: None,
-        };
-        assert_eq!(stats.status_message(), "No tracks found");
     }
 }

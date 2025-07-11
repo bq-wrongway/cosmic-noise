@@ -140,79 +140,6 @@ impl From<AudioCommand> for Message {
     }
 }
 
-// Legacy message type for backward compatibility during refactoring
-#[derive(Debug, Clone)]
-pub enum LegacyMessage {
-    DragWin(crate::utils::dragwin::Message),
-    Loaded(Result<Vec<NoiseTrack>, AppError>),
-}
-
-impl From<LegacyMessage> for Message {
-    fn from(legacy: LegacyMessage) -> Self {
-        match legacy {
-            LegacyMessage::DragWin(drag_msg) => {
-                // Convert dragwin messages to appropriate window messages
-                match drag_msg {
-                    crate::utils::dragwin::Message::Drag => Message::Window(WindowMessage::Drag),
-                    crate::utils::dragwin::Message::Maximize => {
-                        Message::Window(WindowMessage::Maximize)
-                    }
-                    crate::utils::dragwin::Message::Close => Message::Window(WindowMessage::Close),
-                    crate::utils::dragwin::Message::North => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::North))
-                    }
-                    crate::utils::dragwin::Message::NorthEast => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::NorthEast))
-                    }
-                    crate::utils::dragwin::Message::East => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::East))
-                    }
-                    crate::utils::dragwin::Message::SouthEast => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::SouthEast))
-                    }
-                    crate::utils::dragwin::Message::South => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::South))
-                    }
-                    crate::utils::dragwin::Message::SouthWest => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::SouthWest))
-                    }
-                    crate::utils::dragwin::Message::West => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::West))
-                    }
-                    crate::utils::dragwin::Message::NorthWest => {
-                        Message::Window(WindowMessage::Resize(ResizeDirection::NorthWest))
-                    }
-                    crate::utils::dragwin::Message::Play(i) => {
-                        Message::Audio(AudioMessage::PlayPause(i))
-                    }
-                    crate::utils::dragwin::Message::VolumeChanged((volume, track_id)) => {
-                        Message::Audio(AudioMessage::VolumeChanged { track_id, volume })
-                    }
-                    crate::utils::dragwin::Message::StopAll => {
-                        Message::Audio(AudioMessage::StopAll)
-                    }
-                    crate::utils::dragwin::Message::PauseAll => {
-                        Message::Audio(AudioMessage::PauseAll)
-                    }
-                    crate::utils::dragwin::Message::ResumeAll => {
-                        Message::Audio(AudioMessage::ResumeAll)
-                    }
-                    crate::utils::dragwin::Message::Settings => {
-                        Message::App(AppMessage::SwitchToSettings)
-                    }
-                    crate::utils::dragwin::Message::BackToPlayer => {
-                        Message::App(AppMessage::SwitchToPlayer)
-                    }
-                    crate::utils::dragwin::Message::ThemeChanged(theme) => {
-                        Message::App(AppMessage::ThemeChanged)
-                    }
-                }
-            }
-            LegacyMessage::Loaded(result) => Message::Tracks(TrackMessage::Loaded(result)),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -241,12 +168,6 @@ mod tests {
 
     #[test]
     fn test_legacy_conversion() {
-        let legacy = LegacyMessage::DragWin(crate::utils::dragwin::Message::StopAll);
-        let main_msg: Message = legacy.into();
-
-        match main_msg {
-            Message::Audio(AudioMessage::StopAll) => (),
-            _ => panic!("Legacy conversion failed"),
-        }
+        // Removed test for LegacyMessage conversion
     }
 }

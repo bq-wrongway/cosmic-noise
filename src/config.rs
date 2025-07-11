@@ -23,12 +23,12 @@ impl ConfigManager {
                 Ok(config)
             }
             Err(e) => {
-                warn!("Failed to load configuration: {}, using defaults", e);
+                warn!("Failed to load configuration: {e}, using defaults");
                 // Return default configuration if loading fails
                 let default_config = AppConfig::default();
                 // Try to save the default configuration
                 if let Err(save_err) = Self::save(&default_config) {
-                    error!("Failed to save default configuration: {}", save_err);
+                    error!("Failed to save default configuration: {save_err}");
                 }
                 Ok(default_config)
             }
@@ -38,7 +38,7 @@ impl ConfigManager {
     /// Save configuration to disk
     pub fn save(config: &AppConfig) -> Result<(), AppError> {
         confy::store(APP_NAME, CONFIG_NAME, config).map_err(|e| {
-            error!("Failed to save configuration: {}", e);
+            error!("Failed to save configuration: {e}");
             AppError::Config(ConfigError::SaveFailed)
         })?;
 
@@ -51,7 +51,7 @@ impl ConfigManager {
         match Self::load() {
             Ok(config) => config.theme,
             Err(e) => {
-                warn!("Failed to load theme from configuration: {}", e);
+                warn!("Failed to load theme from configuration: {e}");
                 AppTheme::default()
             }
         }

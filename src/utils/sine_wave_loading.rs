@@ -1,5 +1,6 @@
 //! Show a "rising bars" loading indicator (bars animate in a sine wave pattern, centered vertically).
 
+use iced::Length::Fill;
 use iced::advanced::layout;
 use iced::advanced::renderer::{self, Quad};
 use iced::advanced::widget::tree::{self, Tree};
@@ -8,11 +9,10 @@ use iced::border::rounded;
 use iced::mouse;
 use iced::time::Instant;
 use iced::window;
-use iced::Length::Fill;
 use iced::{Background, Color, Element, Event, Length, Rectangle, Size};
 
-use std::time::Duration;
 use std::f32::consts::PI;
+use std::time::Duration;
 
 #[allow(missing_debug_implementations)]
 pub struct SineWaveLoading<'a, Theme>
@@ -116,8 +116,7 @@ impl State {
     }
 }
 
-impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
-    for SineWaveLoading<'a, Theme>
+impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for SineWaveLoading<'a, Theme>
 where
     Message: Clone + 'a,
     Theme: StyleSheet + 'a,

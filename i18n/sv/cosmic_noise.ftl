@@ -1,6 +1,12 @@
 app-title = COSMIC appmall
 welcome = Välkommen till COSMIC! ✨
 not-found = tobeadded
+error = IO error text ${error}
+pb-error = Playback error
 stop-icon = Stop
 pause-all-icon = Pause
 play-all-icon = Play All
+close-icon = Close
+minimize-icon = Minimize
+maximize-icon = Maximize
+back = Back to previous screen
