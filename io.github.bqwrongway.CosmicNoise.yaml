@@ -11,6 +11,7 @@ finish-args:
   - --socket=wayland
   - --socket=x11
   - --filesystem=home
+  - --filesystem=xdg-data/cosmic-noise:rw
   - --env=RUST_BACKTRACE=1
 
 modules:
@@ -28,8 +29,5 @@ modules:
       - install -Dm755 target/release/cosmic_noise /app/bin/cosmic_noise
       - install -Dm644 resources/app.desktop /app/share/applications/io.github.bqwrongway.CosmicNoise.desktop
       - install -Dm644 assets/icons/icon.png /app/share/icons/hicolor/128x128/apps/io.github.bqwrongway.CosmicNoise.png
-      - install -d /app/share/cosmic-noise-sounds
-      - cp -r resources/sounds/* /app/share/cosmic-noise-sounds/
-      - |
-        mkdir -p $HOME/.local/share/cosmic-noise
-        cp -rn /app/share/cosmic-noise-sounds/* $HOME/.local/share/cosmic-noise/ 
+      - install -d /app/share/cosmic-noise/sounds
+      - cp -r resources/sounds/* /app/share/cosmic-noise/sounds/ 

@@ -17,52 +17,91 @@ pub fn get_stem(name: &Path) -> String {
 
 // error handling?
 pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
-    let d = get_local_dir().ok_or(AppError::FileSystem(FileSystemError::DirectoryNotFound))?;
-    walkdir::WalkDir::new(d)
-        .max_depth(1)
-        .follow_links(false)
-        .into_iter()
-        .filter_map(|it| match it {
-            Ok(entry) => {
-                let path = entry.path();
-                (path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS))
-                    .then(|| Ok(NoiseTrack::new(get_stem(path), path.to_path_buf())))
-            }
-            Err(_) => Some(Err(AppError::FileSystem(
-                FileSystemError::DirectoryReadError,
-            ))),
-        })
-        .collect()
-    // .filter_map(|f| f.ok())
-    // .filter(|e| e.path().has_extension(ALLOWED_EXT))
-    // .map(|e| {
-    // Ok(NoiseTrack {
-    //     name: get_stem(e.path()),
-    //     path: e.path().to_path_buf(),
-    //     volume_level: 2.,
-    //     state: PlaybackState::Stopped,
-    // })
-    // })
-    // .collect()
-}
-//check if resource directories exist and return the path of one that does
+    let mut tracks = Vec::new();
+    let mut seen = std::collections::HashSet::new();
 
-fn get_local_dir() -> Option<PathBuf> {
-    match data_dir_exists() {
-        Some(s) => {
-            println!("here : {:?}", s);
-            Some(s)
+    // Always check Flatpak bundled dir first
+    if let Some(flatpak_path) = get_flatpak_dir() {
+        if flatpak_path.exists() {
+            for entry in walkdir::WalkDir::new(&flatpak_path)
+                .max_depth(1)
+                .follow_links(false)
+                .into_iter()
+                .filter_map(Result::ok)
+            {
+                let path = entry.path();
+                if path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS) {
+                    let name = get_stem(path);
+                    if seen.insert(name.clone()) {
+                        tracks.push(NoiseTrack::new(name, path.to_path_buf()));
+                    }
+                }
+            }
         }
-        None => config_dir_exists(),
+    }
+    // Then check user data dir
+    if let Some(data_path) = data_dir_exists() {
+        if data_path.exists() {
+            for entry in walkdir::WalkDir::new(&data_path)
+                .max_depth(1)
+                .follow_links(false)
+                .into_iter()
+                .filter_map(Result::ok)
+            {
+                let path = entry.path();
+                if path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS) {
+                    let name = get_stem(path);
+                    if seen.insert(name.clone()) {
+                        tracks.push(NoiseTrack::new(name, path.to_path_buf()));
+                    }
+                }
+            }
+        }
+    }
+    // Then check user config dir
+    if let Some(config_path) = config_dir_exists() {
+        if config_path.exists() {
+            for entry in walkdir::WalkDir::new(&config_path)
+                .max_depth(1)
+                .follow_links(false)
+                .into_iter()
+                .filter_map(Result::ok)
+            {
+                let path = entry.path();
+                if path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS) {
+                    let name = get_stem(path);
+                    if seen.insert(name.clone()) {
+                        tracks.push(NoiseTrack::new(name, path.to_path_buf()));
+                    }
+                }
+            }
+        }
+    }
+    if tracks.is_empty() {
+        Err(AppError::FileSystem(FileSystemError::DirectoryNotFound))
+    } else {
+        Ok(tracks)
+    }
+}
+
+fn get_flatpak_dir() -> Option<PathBuf> {
+    if std::env::var("FLATPAK_SANDBOX_DIR").is_ok() {
+        Some(PathBuf::from("/app/share/cosmic-noise/sounds"))
+    } else {
+        None
     }
 }
 
 // checks if users .config contains directory cosmic-noise/sounds
 fn config_dir_exists() -> Option<PathBuf> {
     match dirs::config_local_dir() {
-        Some(s) => match s.join(SOUND_DIRECTORY).exists() {
-            true => Some(s.join(SOUND_DIRECTORY)),
-            false => None,
+        Some(s) => {
+            let path = s.join(SOUND_DIRECTORY);
+            log::info!("Checking config dir: {}", path.display());
+            match path.exists() {
+                true => Some(path),
+                false => None,
+            }
         },
         None => None,
     }
@@ -70,9 +109,13 @@ fn config_dir_exists() -> Option<PathBuf> {
 // checks if users .local/share contains directory cosmic-noise/sounds
 fn data_dir_exists() -> Option<PathBuf> {
     match dirs::data_local_dir() {
-        Some(s) => match s.join(SOUND_DIRECTORY).exists() {
-            true => Some(s.join(SOUND_DIRECTORY)),
-            false => None,
+        Some(s) => {
+            let path = s.join(SOUND_DIRECTORY);
+            log::info!("Checking data dir: {}", path.display());
+            match path.exists() {
+                true => Some(path),
+                false => None,
+            }
         },
         None => None,
     }

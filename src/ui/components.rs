@@ -236,21 +236,31 @@ pub fn empty_state<'a>() -> Element<'a, dragwin::Message> {
             .push(
                 text("No Audio Tracks Found")
                     .size(20)
+                    .style(styles::secondary_text_style)
                     .align_x(iced::alignment::Horizontal::Center),
             )
             .push(
-                text("Add audio files to one of these directories:")
+                text("If running as a Flatpak, bundled sounds are included. To add your own sounds, place audio files in one of these directories:")
                     .size(14)
+                    .style(styles::secondary_text_style)
                     .align_x(iced::alignment::Horizontal::Center),
             )
             .push(
                 text("• ~/.local/share/cosmic-noise/sounds/")
                     .size(12)
+                    .style(styles::secondary_text_style)
+                    .align_x(iced::alignment::Horizontal::Center),
+            )
+            .push(  
+                text("• ~/.config/cosmic-noise/sounds/")
+                    .size(12)
+                    .style(styles::secondary_text_style)
                     .align_x(iced::alignment::Horizontal::Center),
             )
             .push(
-                text("• ~/.config/cosmic-noise/sounds/")
-                    .size(12)
+                text("(Bundled sounds are in /app/share/cosmic-noise/sounds, but this is read-only in Flatpak)")
+                    .size(10)
+                    .style(styles::secondary_text_style)
                     .align_x(iced::alignment::Horizontal::Center),
             )
             .spacing(10)
@@ -293,10 +303,12 @@ pub fn settings_view<'a>(current_theme: &crate::models::AppTheme) -> Element<'a,
         column![
             text("Settings")
                 .size(24)
+                .style(styles::secondary_text_style)
                 .align_x(iced::alignment::Horizontal::Center),
             row![
                 text("Theme:")
                     .size(16)
+                    .style(styles::secondary_text_style)
                     .align_x(iced::alignment::Horizontal::Left),
                 theme_picker
             ]

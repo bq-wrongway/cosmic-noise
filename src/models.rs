@@ -492,7 +492,7 @@ pub const DEFAULT_VOLUME_DB: f32 = -30.0;
 /// Supported audio file extensions
 pub const SUPPORTED_EXTENSIONS: &[&str] = &["mp3", "ogg", "flac", "wav"];
 /// Default sound directory name
-pub const SOUND_DIRECTORY: &str = "cosmic-noise/sounds/";
+pub const SOUND_DIRECTORY: &str = "cosmic-noise/sounds";
 /// Application name
 pub const APP_NAME: &str = "Cosmic Noise";
 /// Application version
