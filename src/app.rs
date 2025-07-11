@@ -38,11 +38,16 @@ pub enum Message {
 impl CosmicNoise {
     /// Create a new application instance
     pub fn new() -> (Self, Task<Message>) {
-        let audio_system = AudioSystem::new().unwrap_or_default();
+        let mut audio_system = AudioSystem::new().unwrap_or_default();
 
         // Load theme from configuration
         let current_theme = ConfigManager::load_theme();
         info!("Loaded theme from configuration: {current_theme:?}");
+
+        // Load master volume from configuration and apply to audio system
+        let master_volume = ConfigManager::load_master_volume();
+        audio_system.set_master_volume(master_volume);
+        info!("Loaded master volume from configuration: {} dB", master_volume);
 
         let app = CosmicNoise {
             audio_system,

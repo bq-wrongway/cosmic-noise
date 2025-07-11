@@ -64,6 +64,24 @@ impl ConfigManager {
         Self::save(&config)
     }
 
+    /// Load only the master volume from configuration
+    pub fn load_master_volume() -> f32 {
+        match Self::load() {
+            Ok(config) => config.audio.master_volume,
+            Err(e) => {
+                warn!("Failed to load master volume from configuration: {e}");
+                crate::models::DEFAULT_VOLUME_DB
+            }
+        }
+    }
+
+    /// Save only the master volume to configuration
+    pub fn save_master_volume(volume: f32) -> Result<(), AppError> {
+        let mut config = Self::load().unwrap_or_default();
+        config.audio.master_volume = volume;
+        Self::save(&config)
+    }
+
     // Get the configuration file path
     // pub fn get_config_path() -> Option<std::path::PathBuf> {
     //     confy::get_configuration_file_path(APP_NAME, CONFIG_NAME).ok()

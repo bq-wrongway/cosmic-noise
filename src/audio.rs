@@ -139,6 +139,11 @@ impl AudioSystem {
         self.default_settings.master_volume
     }
 
+    /// Set the master volume
+    pub fn set_master_volume(&mut self, volume: f32) {
+        self.default_settings.master_volume = volume;
+    }
+
     /// Process an audio command
     pub fn process_command(
         &mut self,
@@ -178,6 +183,11 @@ impl AudioSystem {
                 
                 // Update the master volume in settings
                 self.default_settings.master_volume = volume;
+                
+                // Save master volume to configuration
+                if let Err(e) = crate::config::ConfigManager::save_master_volume(volume) {
+                    log::error!("Failed to save master volume to configuration: {}", e);
+                }
                 
                 // Apply master volume to all currently playing tracks
                 let tween = self.create_tween();
