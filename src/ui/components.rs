@@ -188,16 +188,8 @@ pub fn loading_indicator<'a>() -> Element<'a, dragwin::Message> {
 pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
     row![
         //in this case tool bar is my button
-        iced::widget::Space::new(15, 10),
-        action(play_icon(), "Resume", Some(Message::ResumeAll)),
-        action(
-            pause_icon(),
-            text(fl!("pause-all-icon")),
-            Some(Message::PauseAll),
-        ),
-        action(stop_icon(), text(fl!("stop-icon")), Some(Message::StopAll)),
-        iced::widget::Space::new(10, 10),
-        slider(
+        iced::widget::Space::new(15, 10), 
+          slider(
             0.0..=100.0,
             db_to_percentage(master_volume),
             |x| dragwin::Message::MasterVolumeChanged(percentage_to_db(x)),
@@ -209,6 +201,15 @@ pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
         text(format!("{}%", db_to_percentage(master_volume) as u8))
             .size(10)
             .align_x(iced::alignment::Horizontal::Center),
+        action(play_icon(), "Resume", Some(Message::ResumeAll)),
+        action(
+            pause_icon(),
+            text(fl!("pause-all-icon")),
+            Some(Message::PauseAll),
+        ),
+        action(stop_icon(), text(fl!("stop-icon")), Some(Message::StopAll)),
+        iced::widget::Space::new(10, 10),
+     
         horizontal_space(),
         row![
             text(fl!("app-title")).style(|t: &Theme| {
