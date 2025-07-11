@@ -1,0 +1,127 @@
+diff --git a/examples/offset.rs b/examples/offset.rs
+index 3d1c3b9..82b1c9f 100644
+--- a/examples/offset.rs
++++ b/examples/offset.rs
+@@ -12,7 +12,8 @@ fn main() {
+         "  <path d='{}' stroke='#000' fill='none' />",
+         c.to_path(1e-9).to_svg()
+     );
+-    for i in 1..=10 {
++    for i in 1..=50 {
++        println!("running {i}");
+         let co = CubicOffset::new(c, i as f64 * 4.0);
+         let path = kurbo::fit_to_bezpath_opt(&co, 1e-3);
+         println!(
+diff --git a/src/fit.rs b/src/fit.rs
+index ceba830..67ac62a 100644
+--- a/src/fit.rs
++++ b/src/fit.rs
+@@ -407,7 +407,12 @@ fn fit_to_bezpath_opt_inner(
+     range: Range<f64>,
+     path: &mut BezPath,
+ ) -> Option<f64> {
+-    let (c, err2) = fit_to_cubic(source, 0.0..1.0, HUGE).unwrap();
++    println!("fit inner {range:?}");
++    if let Some(t) = source.break_cusp(range.clone()) {
++        println!("fit inner cusp found {t}");
++        return Some(t);
++    }
++    let (c, err2) = fit_to_cubic(source, range.clone(), HUGE).unwrap();
+     let err = err2.sqrt();
+     if err < accuracy {
+         path.move_to(c.p0);
+@@ -422,6 +427,7 @@ fn fit_to_bezpath_opt_inner(
+         match fit_opt_segment(source, accuracy, t0..t1) {
+             FitResult::ParamVal(t) => t0 = t,
+             FitResult::SegmentError(err) => {
++                println!("bailing with seg_err {err}");
+                 last_err = err;
+                 break;
+             }
+@@ -438,17 +444,21 @@ fn fit_to_bezpath_opt_inner(
+         Ok(x) => x,
+         Err(t) => return Some(t),
+     };
+-    //println!("got fit with n={}, err={}", n, x);
++    println!("got fit with n={}, err={}", n, x);
+     for i in 0..n {
+         let t1 = if i < n - 1 {
+             match fit_opt_segment(source, x, t0..range.end) {
+                 FitResult::ParamVal(t1) => t1,
+                 FitResult::SegmentError(_) => range.end,
+-                FitResult::CuspFound(t) => return Some(t),
++                FitResult::CuspFound(t) => {
++                    println!("cusp found late {t}");
++                    return Some(t);
++                }
+             }
+         } else {
+             1.0
+         };
++        println!("appending {:?}", t0..t1);
+         let (c, _) = fit_to_cubic(source, t0..t1, HUGE).unwrap();
+         if i == 0 {
+             path.move_to(c.p0);
+@@ -477,17 +487,21 @@ enum FitResult {
+ }
+ 
+ fn fit_opt_segment(source: &impl ParamCurveFit, accuracy: f64, range: Range<f64>) -> FitResult {
++    println!("calling fos {accuracy} {range:?}");
+     if let Some(t) = source.break_cusp(range.clone()) {
++        println!("fos cusp found {t}");
+         return FitResult::CuspFound(t);
+     }
+     let missing_err = accuracy * 2.0;
+     let err = measure_one_seg(source, range.clone()).unwrap_or(missing_err);
+     if err <= accuracy {
++        println!("fos return SegmentError {err}");
+         return FitResult::SegmentError(err);
+     }
+     let (t0, t1) = (range.start, range.end);
+     let f = |x| {
+         if let Some(t) = source.break_cusp(range.clone()) {
++            println!("fos cusp found at {t}");
+             return Err(t);
+         }
+         let err = measure_one_seg(source, t0..x).unwrap_or(missing_err);
+@@ -496,8 +510,14 @@ fn fit_opt_segment(source: &impl ParamCurveFit, accuracy: f64, range: Range<f64>
+     const EPS: f64 = 1e-9;
+     let k1 = 2.0 / (t1 - t0);
+     match solve_itp_fallible(f, t0, t1, EPS, 1, k1, -accuracy, err - accuracy) {
+-        Ok(t1) => FitResult::ParamVal(t1),
+-        Err(t) => FitResult::CuspFound(t),
++        Ok(t1) => {
++            println!("fit_opt_segment ok {t1}");
++            FitResult::ParamVal(t1)
++        }
++        Err(t) => {
++            println!("fit_opt_segment err {t}");
++            FitResult::CuspFound(t)
++        }
+     }
+ }
+ 
+@@ -509,6 +529,7 @@ fn fit_opt_err_delta(
+     range: Range<f64>,
+     n: usize,
+ ) -> Result<f64, f64> {
++    println!("evaluating fit_opt_err_delta {accuracy}: {:?}", range);
+     let (mut t0, t1) = (range.start, range.end);
+     for _ in 0..n - 1 {
+         t0 = match fit_opt_segment(source, accuracy, t0..t1) {
+@@ -516,9 +537,13 @@ fn fit_opt_err_delta(
+             // In this case, n - 1 will work, which of course means the error is highly
+             // non-monotonic. We should probably harvest that solution.
+             FitResult::SegmentError(_) => return Ok(accuracy),
+-            FitResult::CuspFound(t) => return Err(t),
++            FitResult::CuspFound(t) => {
++                println!("cusp found at {t}");
++                return Err(t);
++            }
+         }
+     }
+-    let err = measure_one_seg(source, t0..1.0).unwrap_or(accuracy * 2.0);
++    let err = measure_one_seg(source, t0..t1).unwrap_or(accuracy * 2.0);
++    println!("ok return, {}", accuracy - err);
+     Ok(accuracy - err)
+ }

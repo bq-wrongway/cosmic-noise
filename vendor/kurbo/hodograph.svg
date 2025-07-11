@@ -1,0 +1,14 @@
+<svg width='400' height='220' xmlns='http://www.w3.org/2000/svg'>
+  <path d='M10,10 C100,100 20,100 110,10' stroke='#000' fill='none'/>
+  <line x1='60' y1='100' x2='60' y2='200' stroke='#888' fill='none'/>
+  <line x1='10' y1='150' x2='110' y2='150' stroke='#888' fill='none'/>
+  <path d='M100.5,190.5 Q24,150 100.5,109.5' stroke='#44f' fill='none'/>
+  <path d='M150,10 C250,110 150,110 250,10' stroke='#000' fill='none'/>
+  <line x1='200' y1='100' x2='200' y2='200' stroke='#888' fill='none'/>
+  <line x1='150' y1='150' x2='250' y2='150' stroke='#888' fill='none'/>
+  <path d='M245,195 Q155,150 245,105' stroke='#44f' fill='none'/>
+  <path d='M290,10 C400,120 280,120 390,10' stroke='#000' fill='none'/>
+  <line x1='340' y1='100' x2='340' y2='200' stroke='#888' fill='none'/>
+  <line x1='290' y1='150' x2='390' y2='150' stroke='#888' fill='none'/>
+  <path d='M389.5,199.5 Q286,150 389.5,100.5' stroke='#44f' fill='none'/>
+</svg>

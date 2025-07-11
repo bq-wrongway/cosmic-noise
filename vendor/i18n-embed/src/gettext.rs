@@ -1,0 +1,129 @@
+//! This module contains the types and functions to interact with the
+//! `gettext` localization system.
+//!
+//! Most important is the [GettextLanguageLoader].
+//!
+//! ⚠️ *This module requires the following crate features to be activated: `gettext-system`.*
+
+use crate::{domain_from_module, I18nAssets, I18nEmbedError, LanguageLoader};
+
+pub use i18n_embed_impl::gettext_language_loader;
+
+use gettext as gettext_system;
+use parking_lot::RwLock;
+use unic_langid::LanguageIdentifier;
+
+/// [LanguageLoader] implementation for the `gettext` localization
+/// system.
+///
+/// ⚠️ *This API requires the following crate features to be activated: `gettext-system`.*
+#[derive(Debug)]
+pub struct GettextLanguageLoader {
+    current_language: RwLock<LanguageIdentifier>,
+    module: &'static str,
+    fallback_language: LanguageIdentifier,
+}
+
+impl GettextLanguageLoader {
+    /// Create a new `GettextLanguageLoader`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use i18n_embed::gettext::GettextLanguageLoader;
+    ///
+    /// GettextLanguageLoader::new(module_path!(), "en".parse().unwrap());
+    /// ```
+    pub fn new(module: &'static str, fallback_language: unic_langid::LanguageIdentifier) -> Self {
+        Self {
+            current_language: RwLock::new(fallback_language.clone()),
+            module,
+            fallback_language,
+        }
+    }
+
+    fn load_src_language(&self) {
+        let catalog = gettext_system::Catalog::empty();
+        tr::internal::set_translator(self.module, catalog);
+        *(self.current_language.write()) = self.fallback_language().clone();
+    }
+}
+
+impl LanguageLoader for GettextLanguageLoader {
+    /// The fallback language for the module this loader is responsible
+    /// for.
+    fn fallback_language(&self) -> &LanguageIdentifier {
+        &self.fallback_language
+    }
+
+    /// The domain for the translation that this loader is associated with.
+    fn domain(&self) -> &'static str {
+        domain_from_module(self.module)
+    }
+
+    /// The language file name to use for this loader's domain.
+    fn language_file_name(&self) -> String {
+        format!("{}.mo", self.domain())
+    }
+
+    /// Get the language which is currently loaded for this loader.
+    fn current_language(&self) -> LanguageIdentifier {
+        self.current_language.read().clone()
+    }
+
+    /// Load the languages `language_ids` using the resources packaged
+    /// in the `i18n_assets` in order of fallback preference. This
+    /// also sets the [LanguageLoader::current_language()] to the
+    /// first in the `language_ids` slice. You can use
+    /// [select()](super::select()) to determine which fallbacks are
+    /// actually available for an arbitrary slice of preferences.
+    ///
+    /// **Note:** Gettext doesn't support loading multiple languages
+    /// as multiple fallbacks. We only load the first of the requested
+    /// languages, and the fallback is the src language.
+    #[allow(single_use_lifetimes)]
+    fn load_languages(
+        &self,
+        i18n_assets: &dyn I18nAssets,
+        language_ids: &[unic_langid::LanguageIdentifier],
+    ) -> Result<(), I18nEmbedError> {
+        let language_id = language_ids
+            .iter()
+            .next()
+            .ok_or(I18nEmbedError::RequestedLanguagesEmpty)?;
+
+        if language_id == self.fallback_language() {
+            self.load_src_language();
+            return Ok(());
+        }
+        let (path, files) = self.language_files(language_id, i18n_assets);
+        let file = match files.as_slice() {
+            [first_file] => first_file,
+            [first_file, ..] => {
+                log::warn!(
+                    "Gettext system does not yet support merging language files for {path:?}"
+                );
+                first_file
+            }
+            [] => {
+                log::error!(
+                    target:"i18n_embed::gettext", 
+                    "{} Setting current_language to fallback locale: \"{}\".", 
+                    I18nEmbedError::LanguageNotAvailable(path, language_id.clone()),
+                    self.fallback_language);
+                self.load_src_language();
+                return Ok(());
+            }
+        };
+
+        let catalog = gettext_system::Catalog::parse(&**file).expect("could not parse the catalog");
+        tr::internal::set_translator(self.module, catalog);
+        *(self.current_language.write()) = language_id.clone();
+
+        Ok(())
+    }
+
+    fn reload(&self, i18n_assets: &dyn I18nAssets) -> Result<(), I18nEmbedError> {
+        self.load_languages(i18n_assets, &[self.current_language()])
+    }
+}

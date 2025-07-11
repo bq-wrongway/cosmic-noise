@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Cosmic Noise
+Comment=Ambient noise player
+Exec=cosmic_noise
+Icon=io.github.bqwrongway.CosmicNoise
+Categories=Audio;Music;Player;Utility;
+Terminal=false
+StartupNotify=true
+X-GNOME-UsesNotifications=true 

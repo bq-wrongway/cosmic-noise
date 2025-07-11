@@ -1,0 +1,39 @@
+Interior mutability, write-once and borrowable as plain `&T`
+------------------------------------------------------------
+
+   This library provides interior mutability that can be borrowed
+   as plain immutable references `&T` in exchange for the write-once,
+   read-many restriction.
+
+   Unlike `std::cell::Cell` or `std::cell::RefCell`, a plain immutable
+   reference `&T` can be taken from `MutOnce<T>`.  Once an immutable
+   reference is taken, the value can never be mutated (even after all
+   references are dropped).
+
+   The use cases include caching getter and delayed evaluation.
+
+Usage
+-----
+
+   Run "cargo doc" in the source directory to generate the API reference.
+   It is also available online at <https://docs.rs/mutate_once>.
+
+   An example follows:
+
+      struct Container {
+          expensive: MutOnce<String>,
+      }
+      impl Container {
+          fn expensive(&self) -> &str {
+              if !self.expensive.is_fixed() {
+                  let mut ref_mut = self.expensive.get_mut();
+                  *ref_mut += "expensive";
+                  // Drop `ref_mut` before calling `get_ref`.
+              }
+              // A plain reference can be returned to the caller
+              // unlike `Cell` or `RefCell`.
+              self.expensive.get_ref()
+          }
+      }
+      let container = Container { expensive: MutOnce::new(String::new()) };
+      assert_eq!(container.expensive(), "expensive");

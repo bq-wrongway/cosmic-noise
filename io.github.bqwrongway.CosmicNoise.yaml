@@ -1,0 +1,35 @@
+app-id: io.github.bqwrongway.CosmicNoise
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: cosmic_noise
+finish-args:
+  - --share=network
+  - --socket=pulseaudio
+  - --socket=wayland
+  - --socket=x11
+  - --filesystem=home
+  - --env=RUST_BACKTRACE=1
+
+modules:
+  - name: cosmic-noise
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+    sources:
+      - type: dir
+        path: .
+      - type: dir
+        path: vendor
+    build-commands:
+      - cargo build --release --target-dir=target
+      - install -Dm755 target/release/cosmic_noise /app/bin/cosmic_noise
+      - install -Dm644 resources/app.desktop /app/share/applications/io.github.bqwrongway.CosmicNoise.desktop
+      - install -Dm644 assets/icons/icon.png /app/share/icons/hicolor/128x128/apps/io.github.bqwrongway.CosmicNoise.png
+      - install -d /app/share/cosmic-noise-sounds
+      - cp -r resources/sounds/* /app/share/cosmic-noise-sounds/
+      - |
+        mkdir -p $HOME/.local/share/cosmic-noise
+        cp -rn /app/share/cosmic-noise-sounds/* $HOME/.local/share/cosmic-noise/ 

@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
+<title>Polynomial of degree 4</title>
+<desc>
+Function: f(x) = (x+4)(x+1)(x-1)(x-3)/14 + 0.5
+</desc>
+<pattern id="grid" width="40" height="40" x="20" y="20" patternUnits="userSpaceOnUse">
+	<rect fill="#FFF" stroke="#CCC" stroke-width="2" width="40" height="40" />
+</pattern>
+<rect width="100%" height="100%" fill="url(#grid)" />
+<g fill="none" stroke-width="4">
+	<path stroke="#000" d="M 0 260 h 400 M 220 0 v 400" />
+	<path stroke="#C00" d="M37.00 -8.03C74.88 539.33 116.01 374.70 164.59 270.11
+        C194.71 205.26 217.22 187.02 249.45 225.97
+        C296.73 283.10 336.42 425.65 373.00 -11.41" />
+</g>
+</svg>
