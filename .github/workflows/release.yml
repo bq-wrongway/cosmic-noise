@@ -49,6 +49,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           echo "Building Windows with regular dependencies"
+          echo "Generating lock file for Windows build"
+          cargo generate-lockfile
           cargo build --release --target ${{ matrix.target }}
 
       - name: Build application (macOS)
