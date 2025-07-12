@@ -10,11 +10,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            package_type: flatpak
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             package_type: msi
@@ -73,34 +70,19 @@ jobs:
           # Build MSI using cargo-wix
           cargo wix --target ${{ matrix.target }} --release --path dist
 
-      - name: Create Flatpak (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          # Build the Flatpak package
-          flatpak-builder --force-clean build-dir io.github.bq-wrongway.CosmicNoise.yaml
-          # Create the Flatpak bundle
-          flatpak build-bundle build-dir cosmic-noise.flatpak io.github.bq-wrongway.CosmicNoise
-
       - name: Upload macOS artifacts
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cosmic-noise-macos
           path: target/${{ matrix.target }}/release/bundle/macos/CosmicNoise.app
 
       - name: Upload Windows artifacts
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cosmic-noise-windows
           path: target/${{ matrix.target }}/release/wix/CosmicNoise.msi
-
-      - name: Upload Linux artifacts
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
-        with:
-          name: cosmic-noise-linux
-          path: cosmic-noise.flatpak
 
   release:
     needs: build
@@ -112,7 +94,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 
@@ -122,7 +104,6 @@ jobs:
           files: |
             artifacts/cosmic-noise-macos/CosmicNoise.app
             artifacts/cosmic-noise-windows/CosmicNoise.msi
-            artifacts/cosmic-noise-linux/cosmic-noise.flatpak
           draft: false
           prerelease: false
         env:
