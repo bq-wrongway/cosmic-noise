@@ -52,10 +52,10 @@ Here are some screenshots showing the app in action:
 *Main interface with multiple ambient tracks*
 
 ![Volume Controls](assets/screenshots/Screenshot_2025-07-12_14-10-37.png)
-*Individual volume controls for each track*
+*Theme selection and settings*
 
 ![Theme Selection](assets/screenshots/Screenshot_2025-07-12_14-10-55.png)
-*Theme selection and settings*
+*Individual volume controls for each track*
 
 ## License
 
