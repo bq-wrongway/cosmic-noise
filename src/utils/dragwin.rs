@@ -17,6 +17,7 @@ use crate::{CosmicNoise, audio::AudioCommand, ui::components::toolbar};
 pub enum Message {
     Drag,
     Maximize,
+    Minimize,
     NorthWest,
     North,
     NorthEast,
@@ -44,6 +45,10 @@ pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
             println!("toggle!");
             // Task::none()
             window::get_latest().and_then(window::toggle_maximize)
+        }
+        Message::Minimize => {
+            // Task::none()
+            window::get_latest().and_then(|id| window::minimize(id, true))
         }
         Message::NorthWest => {
             window::get_latest().and_then(|f| drag_resize(f, window::Direction::NorthWest))
@@ -126,7 +131,7 @@ pub fn view<'a>(
     // toolbar: Element<'a, crate::Message>,
 ) -> Element<'a, Message> {
     let master_volume = cnoise.audio_system.master_volume();
-    
+
     let base = iced::widget::container(
         iced::widget::column![
             mouse_area(

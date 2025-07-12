@@ -223,11 +223,11 @@ pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
         .spacing(5),
         horizontal_space(),
         action(settings_icon(), text("Settings"), Some(Message::Settings)),
-        // action(
-        //     minimize_icon(),
-        //     text(fl!("minimize-icon")),
-        //     Some(Message::Minimize)
-        // ),
+        action(
+            minimize_icon(),
+            text(fl!("minimize-icon")),
+            Some(Message::Minimize)
+        ),
         action(
             maximize_icon(),
             text(fl!("maximize-icon")),
