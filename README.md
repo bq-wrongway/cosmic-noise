@@ -73,7 +73,16 @@ RUST_LOG=debug cargo run
 
 ## Gallery
 
-![Dark Theme](resources/screenshots/dark.png) ![Light Theme](resources/screenshots/light.png)
+Here are some screenshots showing the app in action:
+
+![Main Interface](assets/screenshots/Screenshot_2025-07-12_14-10-26.png)
+*Main interface with multiple ambient tracks*
+
+![Volume Controls](assets/screenshots/Screenshot_2025-07-12_14-10-37.png)
+*Individual volume controls for each track*
+
+![Theme Selection](assets/screenshots/Screenshot_2025-07-12_14-10-55.png)
+*Theme selection and settings*
 
 ## License
 

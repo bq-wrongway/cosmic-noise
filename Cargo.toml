@@ -31,3 +31,25 @@ serde = { version = "1.0", features = ["derive"] }
 [dependencies.i18n-embed]
 version = "0.15"
 features = ["fluent-system", "desktop-requester"]
+
+[package.metadata.bundle]
+name = "Cosmic Noise"
+identifier = "io.github.bq-wrongway.cosmic-noise"
+version = "0.2.5"
+resources = ["assets", "i18n", "resources"]
+copyright = "Copyright (c) 2024 Cosmic Noise Contributors"
+category = "public.app-category.music"
+short_description = "Ambient noise generator"
+long_description = "A beautiful ambient noise generator with customizable sounds and themes"
+
+[package.metadata.bundle.macos]
+minimum_system_version = "10.13.0"
+frameworks = []
+document_types = []
+high_resolution = true
+
+[package.metadata.bundle.windows]
+timestamp_url = "http://timestamp.digicert.com"
+wix_path = "C:\\Program Files (x86)\\WiX Toolset v3.11\\bin"
+wix_banner_path = "assets\\banner.png"
+wix_dialog_path = "assets\\dialog.png"
