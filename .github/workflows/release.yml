@@ -65,8 +65,14 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           # For macOS, use vendored dependencies
-          echo "Generating lock file with vendored sources"
+          echo "Temporarily disabling vendored sources to generate lock file"
+          mv .cargo/config.toml .cargo/config.toml.backup
+          
+          echo "Generating lock file without vendored sources"
           cargo generate-lockfile
+          
+          echo "Restoring vendored sources configuration"
+          mv .cargo/config.toml.backup .cargo/config.toml
           
           echo "Building with vendored dependencies"
           cargo build --release --target ${{ matrix.target }} --frozen
