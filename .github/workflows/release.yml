@@ -45,26 +45,27 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: cargo install cargo-wix
 
-      - name: Build application
+      - name: Build application (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # For Windows, use regular dependencies (no vendored sources)
-            echo "Building Windows with regular dependencies"
-            cargo build --release --target ${{ matrix.target }}
-          else
-            # For macOS, use vendored dependencies
-            echo "Temporarily disabling vendored sources to generate lock file"
-            mv .cargo/config.toml .cargo/config.toml.backup
-            
-            echo "Generating lock file"
-            cargo generate-lockfile
-            
-            echo "Restoring vendored sources configuration"
-            mv .cargo/config.toml.backup .cargo/config.toml
-            
-            echo "Building with vendored dependencies"
-            cargo build --release --target ${{ matrix.target }} --frozen
-          fi
+          echo "Building Windows with regular dependencies"
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Build application (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          # For macOS, use vendored dependencies
+          echo "Temporarily disabling vendored sources to generate lock file"
+          mv .cargo/config.toml .cargo/config.toml.backup
+          
+          echo "Generating lock file"
+          cargo generate-lockfile
+          
+          echo "Restoring vendored sources configuration"
+          mv .cargo/config.toml.backup .cargo/config.toml
+          
+          echo "Building with vendored dependencies"
+          cargo build --release --target ${{ matrix.target }} --frozen
 
       - name: Create macOS .app bundle
         if: matrix.os == 'macos-latest'
