@@ -47,7 +47,9 @@ jobs:
 
       - name: Build application
         run: |
-          # Since vendor directory is committed, we can use --frozen for faster builds
+          # For git dependencies with vendored sources, we need to generate lock file first
+          echo "Generating lock file for vendored dependencies"
+          cargo generate-lockfile
           echo "Building with vendored dependencies"
           cargo build --release --target ${{ matrix.target }} --frozen
 

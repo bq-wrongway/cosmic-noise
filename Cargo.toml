@@ -8,7 +8,7 @@ name = "cosmic_noise"
 path = "src/main.rs"
 
 [dependencies]
-iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", features = [
+iced = { git = "https://github.com/iced-rs/iced.git", rev = "283d0e74a8050ea625da25e0b9180b65f11d1843", features = [
     "debug",
     "image",
     "canvas",
