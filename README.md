@@ -40,9 +40,9 @@ Supported formats: MP3, OGG, FLAC, WAV
 
 
 ## Further development
-- [-] System tray
-- [-] Making global controls visibility dynamic
-- [-] Create pipeline to build mac/windows/linux builds (should depend on iced 0.14 when released)
+- [ ] System tray
+- [ ] Making global controls visibility dynamic
+- [ ] Create pipeline to build mac/windows/linux builds (should depend on iced 0.14 when released)
 
 ## Gallery
 
