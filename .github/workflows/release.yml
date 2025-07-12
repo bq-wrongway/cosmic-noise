@@ -47,9 +47,16 @@ jobs:
 
       - name: Build application
         run: |
-          # For git dependencies with vendored sources, we need to generate lock file first
-          echo "Generating lock file for vendored dependencies"
+          # Temporarily disable vendored sources to generate lock file
+          echo "Temporarily disabling vendored sources to generate lock file"
+          mv .cargo/config.toml .cargo/config.toml.backup
+          
+          echo "Generating lock file"
           cargo generate-lockfile
+          
+          echo "Restoring vendored sources configuration"
+          mv .cargo/config.toml.backup .cargo/config.toml
+          
           echo "Building with vendored dependencies"
           cargo build --release --target ${{ matrix.target }} --frozen
 
