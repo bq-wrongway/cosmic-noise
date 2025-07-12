@@ -46,7 +46,10 @@ jobs:
         run: cargo install cargo-wix
 
       - name: Build application
-        run: cargo build --release --target ${{ matrix.target }}
+        run: |
+          # Since vendor directory is committed, we can use --frozen for faster builds
+          echo "Building with vendored dependencies"
+          cargo build --release --target ${{ matrix.target }} --frozen
 
       - name: Create macOS .app bundle
         if: matrix.os == 'macos-latest'
