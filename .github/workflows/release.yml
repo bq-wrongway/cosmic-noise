@@ -75,7 +75,7 @@ jobs:
           mv .cargo/config.toml.backup .cargo/config.toml
           
           echo "Building with vendored dependencies"
-          cargo build --release --target ${{ matrix.target }} --frozen
+          cargo build --release --target ${{ matrix.target }}
 
       - name: Create macOS .app bundle
         if: matrix.os == 'macos-latest'
