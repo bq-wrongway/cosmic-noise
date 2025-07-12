@@ -49,9 +49,17 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           echo "Building Windows with regular dependencies"
+          echo "Temporarily disabling vendored sources to generate lock file"
+          mv .cargo/config.toml .cargo/config.toml.backup
+          
           echo "Generating lock file for Windows build"
           cargo generate-lockfile
+          
+          echo "Building with regular dependencies (keeping vendored sources disabled)"
           cargo build --release --target ${{ matrix.target }}
+          
+          echo "Restoring vendored sources configuration"
+          mv .cargo/config.toml.backup .cargo/config.toml
 
       - name: Build application (macOS)
         if: matrix.os == 'macos-latest'
