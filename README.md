@@ -1,6 +1,6 @@
 # Cosmic Noise
 
-A beautiful ambient noise player built with Rust and Iced, heavily inspired by Blanket.
+An ambient noise player built with Rust and Iced, heavily inspired by Blanket.
 
 ## Features
 
@@ -14,13 +14,7 @@ A beautiful ambient noise player built with Rust and Iced, heavily inspired by B
 
 ### Flatpak (Recommended)
 
-```bash
-# Build and install locally
-just flatpak-install
-
-# Run the app
-just flatpak-run
-```
+... to be added 
 
 ### From Source
 
@@ -44,32 +38,11 @@ Place your audio files in one of these directories:
 
 Supported formats: MP3, OGG, FLAC, WAV
 
-## Development
 
-### Prerequisites
-- Rust 1.85.0 or later
-- Flatpak SDK (for Flatpak builds)
-
-### Building for Flatpak
-```bash
-# Build Flatpak package
-just flatpak-build
-
-# Clean build artifacts
-just flatpak-clean
-
-# Export bundle for distribution
-just flatpak-bundle
-```
-
-### Local Development
-```bash
-# Run in debug mode
-cargo run
-
-# Run with logging
-RUST_LOG=debug cargo run
-```
+## Further development
+[-] System tray
+[-] Making global controls visibility dynamic
+[-] Create pipeline to build mac/windows/linux builds (should depend on iced 0.14 when released)
 
 ## Gallery
 
