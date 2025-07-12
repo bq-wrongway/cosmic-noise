@@ -47,18 +47,24 @@ jobs:
 
       - name: Build application
         run: |
-          # Temporarily disable vendored sources to generate lock file
-          echo "Temporarily disabling vendored sources to generate lock file"
-          mv .cargo/config.toml .cargo/config.toml.backup
-          
-          echo "Generating lock file"
-          cargo generate-lockfile
-          
-          echo "Restoring vendored sources configuration"
-          mv .cargo/config.toml.backup .cargo/config.toml
-          
-          echo "Building with vendored dependencies"
-          cargo build --release --target ${{ matrix.target }} --frozen
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # For Windows, use regular dependencies (no vendored sources)
+            echo "Building Windows with regular dependencies"
+            cargo build --release --target ${{ matrix.target }}
+          else
+            # For macOS, use vendored dependencies
+            echo "Temporarily disabling vendored sources to generate lock file"
+            mv .cargo/config.toml .cargo/config.toml.backup
+            
+            echo "Generating lock file"
+            cargo generate-lockfile
+            
+            echo "Restoring vendored sources configuration"
+            mv .cargo/config.toml.backup .cargo/config.toml
+            
+            echo "Building with vendored dependencies"
+            cargo build --release --target ${{ matrix.target }} --frozen
+          fi
 
       - name: Create macOS .app bundle
         if: matrix.os == 'macos-latest'
