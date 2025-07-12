@@ -223,7 +223,6 @@ pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
         .spacing(5),
         horizontal_space(),
         action(settings_icon(), text("Settings"), Some(Message::Settings)),
-        action(close_icon(), text(fl!("close-icon")), Some(Message::Close)),
         // action(
         //     minimize_icon(),
         //     text(fl!("minimize-icon")),
@@ -234,6 +233,7 @@ pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
             text(fl!("maximize-icon")),
             Some(Message::Maximize)
         ),
+        action(close_icon(), text(fl!("close-icon")), Some(Message::Close)),
         iced::widget::Space::new(15, 10),
     ]
     .align_y(Center)
