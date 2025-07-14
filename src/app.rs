@@ -1,5 +1,5 @@
 
-use crate::audio::{AudioCommand, AudioEvent, AudioSystem};
+use crate::audio::{AudioCommand, AudioSystem};
 use crate::config::ConfigManager;
 use crate::errors::AppError;
 use crate::models::{AppTheme, NoiseTrack, View};
@@ -73,21 +73,19 @@ impl CosmicNoise {
         }
     }
 
-    pub fn process_audio_command(&mut self, command: AudioCommand) -> Vec<AudioEvent> {
+    pub fn process_audio_command(&mut self, command: AudioCommand) {
         match self
             .audio_system
             .process_command(command, &mut self.track_list)
         {
-            Ok(events) => {
+            Ok(()) => {
                 // Clear any previous audio errors on success
                 if matches!(self.error, Some(AppError::Audio(_))) {
                     self.error = None;
                 }
-                events
             }
             Err(e) => {
                 self.error = Some(e);
-                vec![]
             }
         }
     }
