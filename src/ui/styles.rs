@@ -67,17 +67,17 @@ pub fn loader_running_style(theme: &Theme) -> sine_wave_loading::Style {
         background_color: Color::TRANSPARENT,
     }
 }
+pub fn loader_paused_style(theme: &Theme) -> sine_wave_loading::Style {
+    let palette = theme.extended_palette();
+    sine_wave_loading::Style {
+        color: palette.warning.strong.color,
+        background_color: Color::TRANSPARENT,
+    }
+}
 pub fn loader_primary_style(theme: &Theme) -> sine_wave_loading::Style {
     let palette = theme.extended_palette();
     sine_wave_loading::Style {
         color: palette.primary.strong.color,
-        background_color: Color::TRANSPARENT,
-    }
-}
-pub fn loader_stopped_style(theme: &Theme) -> sine_wave_loading::Style {
-    let palette = theme.extended_palette();
-    sine_wave_loading::Style {
-        color: palette.danger.strong.color,
         background_color: Color::TRANSPARENT,
     }
 }

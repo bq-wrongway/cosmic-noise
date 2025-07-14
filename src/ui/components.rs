@@ -55,9 +55,11 @@ fn track_icon(track: &NoiseTrack) -> Element<dragwin::Message> {
         .width(50)
         .height(50);
     match track.state {
-        PlaybackState::Stopped => container(sine_loading.style(styles::loader_primary_style)),
-        PlaybackState::Paused => container(sine_loading.style(styles::loader_stopped_style)),
-        _ => container(sine_loading.style(styles::loader_running_style)),
+        // PlaybackState::Stopped => container(sine_loading.style(styles::loader_stopped_style)),
+        PlaybackState::Paused => container(sine_loading.style(styles::loader_paused_style)),
+        PlaybackState::Playing=> container(sine_loading.style(styles::loader_running_style)),
+
+        _ => container(sine_loading.style(styles::loader_primary_style)),
     }
     .into()
 }

@@ -1,7 +1,3 @@
-//! Core application logic for the Cosmic Noise application.
-//!
-//! This module contains the main application state and business logic,
-//! following the Elm architecture pattern with clear separation of concerns.
 
 use crate::audio::{AudioCommand, AudioEvent, AudioSystem};
 use crate::config::ConfigManager;
@@ -26,25 +22,20 @@ pub struct CosmicNoise {
     pub current_theme: AppTheme,
 }
 
-/// Application messages that drive state changes
 #[derive(Debug, Clone)]
 pub enum Message {
-    /// Window management messages (drag, resize, etc.)
     DragWin(crate::utils::dragwin::Message),
-    /// Track loading completion
     Loaded(Result<Vec<NoiseTrack>, AppError>),
 }
 
 impl CosmicNoise {
-    /// Create a new application instance
     pub fn new() -> (Self, Task<Message>) {
         let mut audio_system = AudioSystem::new().unwrap_or_default();
 
-        // Load theme from configuration
         let current_theme = ConfigManager::load_theme();
         info!("Loaded theme from configuration: {current_theme:?}");
 
-        // Load master volume from configuration and apply to audio system
+        //master volume (amplifier )
         let master_volume = ConfigManager::load_master_volume();
         audio_system.set_master_volume(master_volume);
         info!("Loaded master volume from configuration: {} dB", master_volume);
@@ -62,7 +53,6 @@ impl CosmicNoise {
         (app, task)
     }
 
-    /// Update application state based on incoming messages
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::DragWin(drag_msg) => {
@@ -83,7 +73,6 @@ impl CosmicNoise {
         }
     }
 
-    /// Process audio commands and return resulting events
     pub fn process_audio_command(&mut self, command: AudioCommand) -> Vec<AudioEvent> {
         match self
             .audio_system

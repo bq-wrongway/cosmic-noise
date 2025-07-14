@@ -1,12 +1,3 @@
-//! Audio management module for the Cosmic Noise application.
-//!
-//! This module provides comprehensive audio playback functionality including:
-//! - Audio manager initialization and lifecycle management
-//! - Sound loading and playback control
-//! - Volume control and audio effects
-//! - Audio device management and error handling
-//! - Track state management
-
 use crate::errors::{AppError, AudioError};
 use crate::models::{AudioSettings, AudioStats, NoiseTrack};
 use kira::sound::streaming::{StreamingSoundData, StreamingSoundHandle, StreamingSoundSettings};
@@ -15,59 +6,35 @@ use kira::{AudioManager, AudioManagerSettings, DefaultBackend, Tween};
 use std::collections::HashMap;
 use std::path::Path;
 
-/// Audio manager wrapper that handles all audio operations
 pub struct AudioSystem {
-    /// The Kira audio manager instance
     manager: Option<AudioManager<DefaultBackend>>,
-    /// Currently playing audio handles indexed by track ID
     playing_handles: HashMap<usize, StreamingSoundHandle<FromFileError>>,
-    /// Global playback state
     global_state: PlaybackState,
-    /// Default audio settings
     default_settings: AudioSettings,
 }
 
-/// Audio playback command
 #[derive(Debug, Clone)]
 pub enum AudioCommand {
-    /// Play a track by index
     Play(usize),
-    /// Pause a track by index
     Pause(usize),
-    /// Resume a track by index
     Resume(usize),
-    /// Stop a track by index
     Stop(usize),
-    /// Set volume for a track
     SetVolume { track_id: usize, volume: f32 },
-    /// Stop all playing tracks
     StopAll,
-    /// Pause all playing tracks
     PauseAll,
-    /// Resume all paused tracks
     ResumeAll,
-    /// Set master volume
     SetMasterVolume(f32),
 }
 
-/// Audio event that can be emitted during playback
 #[derive(Debug, Clone)]
 pub enum AudioEvent {
-    /// Track started playing
     TrackStarted(usize),
-    /// Track paused
     TrackPaused(usize),
-    /// Track resumed
     TrackResumed(usize),
-    /// Track stopped
     TrackStopped(usize),
-    /// Track finished playing
     TrackFinished(usize),
-    /// Volume changed for a track
     VolumeChanged { track_id: usize, volume: f32 },
-    /// Audio system error occurred
     Error(AudioError),
-    /// Master volume changed
     MasterVolumeChanged(f32),
 }
 
@@ -281,7 +248,7 @@ impl AudioSystem {
         tracks[track_id].state = PlaybackState::Playing;
 
         events.push(AudioEvent::TrackStarted(track_id));
-        log::info!("Started playing track: {}", track_name);
+        log::info!("Started playing track: {track_name}");
 
         Ok(events)
     }
