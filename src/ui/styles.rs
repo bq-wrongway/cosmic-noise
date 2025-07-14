@@ -6,6 +6,8 @@
 use iced::widget::{button, slider, text};
 use iced::{Background, Border, Color, Theme};
 
+use crate::utils::sine_wave_loading;
+
 /// Style function for track card buttons
 pub fn card_button_style(theme: &Theme, status: button::Status) -> button::Style {
     let palette = theme.extended_palette();
@@ -55,6 +57,28 @@ pub fn card_button_style(theme: &Theme, status: button::Status) -> button::Style
             },
             ..Default::default()
         },
+    }
+}
+
+pub fn loader_running_style(theme: &Theme) -> sine_wave_loading::Style {
+    let palette = theme.extended_palette();
+    sine_wave_loading::Style {
+        color: palette.success.strong.color,
+        background_color: Color::TRANSPARENT,
+    }
+}
+pub fn loader_primary_style(theme: &Theme) -> sine_wave_loading::Style {
+    let palette = theme.extended_palette();
+    sine_wave_loading::Style {
+        color: palette.primary.strong.color,
+        background_color: Color::TRANSPARENT,
+    }
+}
+pub fn loader_stopped_style(theme: &Theme) -> sine_wave_loading::Style {
+    let palette = theme.extended_palette();
+    sine_wave_loading::Style {
+        color: palette.danger.strong.color,
+        background_color: Color::TRANSPARENT,
     }
 }
 

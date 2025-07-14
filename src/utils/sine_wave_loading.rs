@@ -17,11 +17,11 @@ use std::time::Duration;
 #[allow(missing_debug_implementations)]
 pub struct SineWaveLoading<'a, Theme>
 where
-    Theme: StyleSheet,
+    Theme: StyleSheet<Style = Style>,
 {
     width: Length,
     height: Length,
-    style: Theme::Style,
+    style_fn: Option<Box<dyn Fn(&Theme) -> Style + 'a>>,
     bar_count: usize,
     radius: f32,
     running: bool,
@@ -31,17 +31,17 @@ where
 
 impl<'a, Theme> SineWaveLoading<'a, Theme>
 where
-    Theme: StyleSheet,
+    Theme: StyleSheet<Style = Style>,
 {
     pub fn new() -> Self {
         Self {
             width: Fill,
             height: Fill,
-            radius: 0.0,
-            style: Theme::Style::default(),
+            style_fn: None,
             bar_count: 7,
             running: true,
             cycle_duration: Duration::from_millis(900),
+            radius: 0.0,
             _phantom: std::marker::PhantomData,
         }
     }
@@ -61,8 +61,11 @@ where
         self
     }
 
-    pub fn style(mut self, style: impl Into<Theme::Style>) -> Self {
-        self.style = style.into();
+    pub fn style<F>(mut self, style_fn: F) -> Self
+    where
+        F: Fn(&Theme) -> Style + 'a,
+    {
+        self.style_fn = Some(Box::new(style_fn));
         self
     }
 
@@ -85,7 +88,7 @@ where
 
 impl<Theme> Default for SineWaveLoading<'_, Theme>
 where
-    Theme: StyleSheet,
+    Theme: StyleSheet<Style = Style>,
 {
     fn default() -> Self {
         Self::new()
@@ -119,7 +122,7 @@ impl State {
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for SineWaveLoading<'a, Theme>
 where
     Message: Clone + 'a,
-    Theme: StyleSheet + 'a,
+    Theme: StyleSheet<Style = Style> + 'a,
     Renderer: advanced::Renderer + 'a,
 {
     fn tag(&self) -> tree::Tag {
@@ -178,7 +181,12 @@ where
         _viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
-        let custom_style = theme.appearance(&self.style);
+        let style = if let Some(ref style_fn) = self.style_fn {
+            style_fn(theme)
+        } else {
+            Style::default()
+        };
+        let custom_style = theme.appearance(&style);
         let state = tree.state.downcast_ref::<State>();
 
         // Background fill
@@ -187,7 +195,7 @@ where
                 bounds,
                 ..renderer::Quad::default()
             },
-            Background::Color(Color::TRANSPARENT),
+            Background::Color(custom_style.background_color),
         );
 
         // Bars animate as sine wave, centered vertically
@@ -233,7 +241,7 @@ impl<'a, Message, Theme, Renderer> From<SineWaveLoading<'a, Theme>>
     for Element<'a, Message, Theme, Renderer>
 where
     Message: Clone + 'a,
-    Theme: StyleSheet + 'a,
+    Theme: StyleSheet<Style = Style> + 'a,
     Renderer: iced::advanced::Renderer + 'a,
 {
     fn from(wave: SineWaveLoading<'a, Theme>) -> Self {
@@ -243,16 +251,24 @@ where
 
 // --- Style infrastructure is exactly the same as before ---
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Style {
+    pub color: Color,
+    pub background_color: Color,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Appearance {
     /// The bar [`Color`] of the progress indicator.
     pub bar_color: Color,
+    pub background_color: Color,
 }
 
 impl Default for Appearance {
     fn default() -> Self {
         Self {
             bar_color: Color::BLACK,
+            background_color: Color::TRANSPARENT,
         }
     }
 }
@@ -265,13 +281,12 @@ pub trait StyleSheet {
 }
 
 impl StyleSheet for iced::Theme {
-    type Style = ();
+    type Style = Style;
 
-    fn appearance(&self, _style: &Self::Style) -> Appearance {
-        let palette = self.extended_palette();
-
+    fn appearance(&self, style: &Self::Style) -> Appearance {
         Appearance {
-            bar_color: palette.primary.base.color,
+            bar_color: style.color,
+            background_color: style.background_color,
         }
     }
 }

@@ -13,8 +13,9 @@ use iced::{
 
 use crate::{CosmicNoise, audio::AudioCommand, ui::components::toolbar};
 
+/// Window management messages for drag, resize, maximize, minimize, close
 #[derive(Debug, Clone)]
-pub enum Message {
+pub enum WindowMessage {
     Drag,
     Maximize,
     Minimize,
@@ -27,98 +28,115 @@ pub enum Message {
     SouthWest,
     SouthEast,
     Close,
+}
+
+/// Audio control messages for play, volume, stop, pause, resume
+#[derive(Debug, Clone)]
+pub enum AudioMessage {
     Play(usize),
     VolumeChanged((f32, usize)),
     MasterVolumeChanged(f32),
     StopAll,
     PauseAll,
     ResumeAll,
+}
+
+/// UI navigation messages for settings, navigation, theme changes
+#[derive(Debug, Clone)]
+pub enum UIMessage {
     Settings,
     BackToPlayer,
     ThemeChanged(crate::models::AppTheme),
 }
 
+/// Combined message type that can handle all three message types
+#[derive(Debug, Clone)]
+pub enum Message {
+    Window(WindowMessage),
+    Audio(AudioMessage),
+    UI(UIMessage),
+}
+
 pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
     match message {
-        Message::Drag => window::get_latest().and_then(window::drag),
-        Message::Maximize => {
-            println!("toggle!");
-            // Task::none()
-            window::get_latest().and_then(window::toggle_maximize)
-        }
-        Message::Minimize => {
-            // Task::none()
-            window::get_latest().and_then(|id| window::minimize(id, true))
-        }
-        Message::NorthWest => {
-            window::get_latest().and_then(|f| drag_resize(f, window::Direction::NorthWest))
-        }
-        Message::North => {
-            window::get_latest().and_then(|f| drag_resize(f, window::Direction::North))
-        }
-        Message::NorthEast => {
-            window::get_latest().and_then(|f| drag_resize(f, window::Direction::NorthEast))
-        }
-        Message::West => window::get_latest().and_then(|f| drag_resize(f, window::Direction::West)),
-        Message::East => window::get_latest().and_then(|f| drag_resize(f, window::Direction::East)),
-        Message::South => {
-            window::get_latest().and_then(|f| drag_resize(f, window::Direction::South))
-        }
-        Message::SouthWest => {
-            window::get_latest().and_then(|f| drag_resize(f, window::Direction::SouthWest))
-        }
-        Message::SouthEast => {
-            window::get_latest().and_then(|f| drag_resize(f, window::Direction::SouthEast))
-        }
-        Message::Close => window::get_latest().and_then(window::close),
-
-        Message::Play(i) => {
-            cnoise.process_audio_command(AudioCommand::Play(i));
-            Task::none()
-        }
-        Message::VolumeChanged(level) => {
-            let (volume, track_id) = level;
-            cnoise.process_audio_command(AudioCommand::SetVolume { track_id, volume });
-            Task::none()
-        }
-        Message::MasterVolumeChanged(volume) => {
-            cnoise.process_audio_command(AudioCommand::SetMasterVolume(volume));
-            Task::none()
-        }
-        Message::StopAll => {
-            cnoise.process_audio_command(AudioCommand::StopAll);
-            Task::none()
-        }
-        Message::PauseAll => {
-            cnoise.process_audio_command(AudioCommand::PauseAll);
-            Task::none()
-        }
-        Message::ResumeAll => {
-            cnoise.process_audio_command(AudioCommand::ResumeAll);
-            Task::none()
-        }
-        Message::Settings => {
-            // Switch to settings view
-            cnoise.current_view = crate::models::View::Settings;
-            Task::none()
-        }
-        Message::BackToPlayer => {
-            // Switch back to player view
-            cnoise.current_view = crate::models::View::Player;
-            Task::none()
-        }
-        Message::ThemeChanged(theme) => {
-            // Update theme in app state
-            cnoise.current_theme = theme;
-
-            // Save theme to configuration
-            if let Err(e) = crate::config::ConfigManager::save_theme(theme) {
-                log::error!("Failed to save theme to configuration: {}", e);
-                cnoise.error = Some(e);
-            } else {
-                log::info!("Theme saved to configuration: {:?}", theme);
+        Message::Window(window_msg) => match window_msg {
+            WindowMessage::Drag => window::get_latest().and_then(window::drag).map(Message::Window),
+            WindowMessage::Maximize => {
+                println!("toggle!");
+                window::get_latest().and_then(window::toggle_maximize).map(Message::Window)
             }
+            WindowMessage::Minimize => {
+                window::get_latest().and_then(|id| window::minimize(id, true)).map(Message::Window)
+            }
+            WindowMessage::NorthWest => {
+                window::get_latest().and_then(|f| drag_resize(f, window::Direction::NorthWest)).map(Message::Window)
+            }
+            WindowMessage::North => {
+                window::get_latest().and_then(|f| drag_resize(f, window::Direction::North)).map(Message::Window)
+            }
+            WindowMessage::NorthEast => {
+                window::get_latest().and_then(|f| drag_resize(f, window::Direction::NorthEast)).map(Message::Window)
+            }
+            WindowMessage::West => window::get_latest().and_then(|f| drag_resize(f, window::Direction::West)).map(Message::Window),
+            WindowMessage::East => window::get_latest().and_then(|f| drag_resize(f, window::Direction::East)).map(Message::Window),
+            WindowMessage::South => {
+                window::get_latest().and_then(|f| drag_resize(f, window::Direction::South)).map(Message::Window)
+            }
+            WindowMessage::SouthWest => {
+                window::get_latest().and_then(|f| drag_resize(f, window::Direction::SouthWest)).map(Message::Window)
+            }
+            WindowMessage::SouthEast => {
+                window::get_latest().and_then(|f| drag_resize(f, window::Direction::SouthEast)).map(Message::Window)
+            }
+            WindowMessage::Close => window::get_latest().and_then(window::close).map(Message::Window),
+        },
+        Message::Audio(audio_msg) => {
+            match audio_msg {
+                AudioMessage::Play(i) => {
+                    cnoise.process_audio_command(AudioCommand::Play(i));
+                }
+                AudioMessage::VolumeChanged(level) => {
+                    let (volume, track_id) = level;
+                    cnoise.process_audio_command(AudioCommand::SetVolume { track_id, volume });
+                }
+                AudioMessage::MasterVolumeChanged(volume) => {
+                    cnoise.process_audio_command(AudioCommand::SetMasterVolume(volume));
+                }
+                AudioMessage::StopAll => {
+                    cnoise.process_audio_command(AudioCommand::StopAll);
+                }
+                AudioMessage::PauseAll => {
+                    cnoise.process_audio_command(AudioCommand::PauseAll);
+                }
+                AudioMessage::ResumeAll => {
+                    cnoise.process_audio_command(AudioCommand::ResumeAll);
+                }
+            }
+            Task::none()
+        }
+        Message::UI(ui_msg) => {
+            match ui_msg {
+                UIMessage::Settings => {
+                    // Switch to settings view
+                    cnoise.current_view = crate::models::View::Settings;
+                }
+                UIMessage::BackToPlayer => {
+                    // Switch back to player view
+                    cnoise.current_view = crate::models::View::Player;
+                }
+                UIMessage::ThemeChanged(theme) => {
+                    // Update theme in app state
+                    cnoise.current_theme = theme;
 
+                    // Save theme to configuration
+                    if let Err(e) = crate::config::ConfigManager::save_theme(theme) {
+                        log::error!("Failed to save theme to configuration: {}", e);
+                        cnoise.error = Some(e);
+                    } else {
+                        log::info!("Theme saved to configuration: {:?}", theme);
+                    }
+                }
+            }
             Task::none()
         }
     }
@@ -140,8 +158,8 @@ pub fn view<'a>(
                     .width(Fill)
                     .height(40)
             )
-            .on_double_click(Message::Maximize)
-            .on_press(Message::Drag),
+            .on_double_click(Message::Window(WindowMessage::Maximize))
+            .on_press(Message::Window(WindowMessage::Drag)),
         ]
         .push(content),
     )
@@ -165,7 +183,7 @@ pub fn view<'a>(
                 .height(2)
                 .style(|_| border_container())
         )
-        .on_press(Message::SouthWest)
+        .on_press(Message::Window(WindowMessage::SouthWest))
         .interaction(Interaction::ResizingDiagonallyUp),
         mouse_area(
             iced::widget::container(row![])
@@ -173,7 +191,7 @@ pub fn view<'a>(
                 .height(2)
                 .style(|_| border_container())
         )
-        .on_press(Message::South)
+        .on_press(Message::Window(WindowMessage::South))
         .interaction(Interaction::ResizingVertically),
         mouse_area(
             iced::widget::container(row![])
@@ -181,7 +199,7 @@ pub fn view<'a>(
                 .height(2)
                 .style(|_| border_container())
         )
-        .on_press(Message::SouthEast)
+        .on_press(Message::Window(WindowMessage::SouthEast))
         .interaction(Interaction::ResizingDiagonallyDown),
     ];
 
@@ -192,7 +210,7 @@ pub fn view<'a>(
                 .height(2)
                 .style(|_| border_container())
         )
-        .on_press(Message::NorthWest)
+        .on_press(Message::Window(WindowMessage::NorthWest))
         .interaction(Interaction::ResizingDiagonallyDown),
         mouse_area(
             iced::widget::container(row![])
@@ -200,7 +218,7 @@ pub fn view<'a>(
                 .height(2)
                 .style(|_| border_container())
         )
-        .on_press(Message::North)
+        .on_press(Message::Window(WindowMessage::North))
         .interaction(Interaction::ResizingVertically),
         mouse_area(
             iced::widget::container(row![])
@@ -208,7 +226,7 @@ pub fn view<'a>(
                 .height(2)
                 .style(|_| border_container())
         )
-        .on_press(Message::NorthEast)
+        .on_press(Message::Window(WindowMessage::NorthEast))
         .interaction(Interaction::ResizingDiagonallyUp),
     ];
 
@@ -222,7 +240,7 @@ pub fn view<'a>(
                         .height(Fill)
                         .style(|_| border_container())
                 )
-                .on_press(Message::West)
+                .on_press(Message::Window(WindowMessage::West))
                 .interaction(Interaction::ResizingHorizontally),
                 base,
                 mouse_area(
@@ -231,7 +249,7 @@ pub fn view<'a>(
                         .height(Fill)
                         .style(|_| border_container())
                 )
-                .on_press(Message::East)
+                .on_press(Message::Window(WindowMessage::East))
                 .interaction(Interaction::ResizingHorizontally),
             ]
             .width(Fill)
