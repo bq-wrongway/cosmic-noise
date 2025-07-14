@@ -115,21 +115,18 @@ pub fn error_text_style(theme: &Theme) -> text::Style {
     }
 }
 
-/// Style function for success text
 pub fn success_text_style(theme: &Theme) -> text::Style {
     text::Style {
         color: Some(theme.extended_palette().success.strong.color),
     }
 }
 
-/// Style function for warning text
 pub fn warning_text_style(theme: &Theme) -> text::Style {
     text::Style {
         color: Some(theme.extended_palette().background.base.text),
     }
 }
 
-/// Style function for primary text
 pub fn primary_text_style(theme: &Theme) -> text::Style {
     text::Style {
         color: Some(theme.extended_palette().primary.strong.color),
@@ -150,37 +147,30 @@ pub fn muted_text_style(theme: &Theme) -> text::Style {
     }
 }
 
-/// Get background color for the main application
 pub fn app_background_color(theme: &Theme) -> Color {
     theme.palette().background
 }
 
-/// Get primary accent color
 pub fn primary_color(theme: &Theme) -> Color {
     theme.extended_palette().primary.strong.color
 }
 
-/// Get secondary accent color
 pub fn secondary_color(theme: &Theme) -> Color {
     theme.extended_palette().secondary.strong.color
 }
 
-/// Get danger/error color
 pub fn danger_color(theme: &Theme) -> Color {
     theme.extended_palette().danger.strong.color
 }
 
-/// Get success color
 pub fn success_color(theme: &Theme) -> Color {
     theme.extended_palette().success.strong.color
 }
 
-/// Get warning color
 pub fn warning_color(theme: &Theme) -> Color {
     theme.extended_palette().background.base.text
 }
 
-/// Create a rounded border with the given radius
 pub fn rounded_border(radius: f32) -> Border {
     Border {
         radius: radius.into(),
@@ -189,7 +179,6 @@ pub fn rounded_border(radius: f32) -> Border {
     }
 }
 
-/// Create a colored border
 pub fn colored_border(color: Color, width: f32, radius: f32) -> Border {
     Border {
         color,

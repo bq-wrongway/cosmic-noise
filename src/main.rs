@@ -3,7 +3,6 @@ mod audio;
 mod config;
 mod errors;
 mod i18n;
-mod messages;
 mod models;
 mod ui;
 mod utils;
@@ -16,6 +15,15 @@ use crate::ui::view::main_view;
 pub const SPACING: f32 = 5.0;
 
 pub fn main() -> iced::Result {
+
+    // initialize logger 
+    env_logger::builder()
+    .filter_level(log::LevelFilter::Info)
+    .format_target(false)
+    .format_timestamp(None)
+    .init();
+    log::info!("Starting Cosmic Noise");
+    
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
     // Enable localizations to be applied.
     i18n::init(&requested_languages);
@@ -26,6 +34,7 @@ pub fn main() -> iced::Result {
             transparent: true,
             decorations: false,
             size: Size::new(800., 650.),
+            min_size:Some(Size::new(500., 350.)),            
             visible: true,
 
             ..Default::default()

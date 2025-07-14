@@ -483,20 +483,20 @@ impl Default for WindowSettings {
 }
 
 // Constants used throughout the application
+/// Default volume in decibels
+pub const DEFAULT_VOLUME_DB: f32 = -30.0;
 /// Minimum volume in decibels
 pub const MIN_VOLUME_DB: f32 = -60.0;
 /// Maximum volume in decibels (safe limit)
 pub const MAX_VOLUME_DB: f32 = 0.0;
-/// Default volume in decibels
-pub const DEFAULT_VOLUME_DB: f32 = -30.0;
-/// Supported audio file extensions
-pub const SUPPORTED_EXTENSIONS: &[&str] = &["mp3", "ogg", "flac", "wav"];
-/// Default sound directory name
-pub const SOUND_DIRECTORY: &str = "cosmic-noise/sounds";
 /// Application name
 pub const APP_NAME: &str = "Cosmic Noise";
 /// Application version
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Supported audio file extensions
+pub const SUPPORTED_EXTENSIONS: &[&str] = &["mp3", "ogg", "flac", "wav"];
+/// Default sound directory name
+pub const SOUND_DIRECTORY: &str = "cosmic-noise/sounds";
 
 #[cfg(test)]
 mod tests {
