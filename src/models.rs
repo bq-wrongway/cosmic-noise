@@ -385,6 +385,7 @@ pub enum AppTheme {
     #[default]
     Tokyo,
     Catppuccin,
+    Moonfly,
 }
 
 impl AppTheme {
@@ -395,6 +396,7 @@ impl AppTheme {
             AppTheme::GruvboxDark,
             AppTheme::Tokyo,
             AppTheme::Catppuccin,
+            AppTheme::Moonfly,
         ]
     }
 
@@ -405,6 +407,7 @@ impl AppTheme {
             AppTheme::GruvboxDark => "Gruvbox Dark",
             AppTheme::Tokyo => "Tokyo Night",
             AppTheme::Catppuccin => "Catppuccin",
+            AppTheme::Moonfly => "Moonfly",
         }
     }
 }

@@ -30,17 +30,6 @@ pub enum WindowMessage {
     Close,
 }
 
-/// Audio control messages for play, volume, stop, pause, resume
-#[derive(Debug, Clone)]
-pub enum AudioMessage {
-    Play(usize),
-    VolumeChanged((f32, usize)),
-    MasterVolumeChanged(f32),
-    StopAll,
-    PauseAll,
-    ResumeAll,
-}
-
 /// UI navigation messages for settings, navigation, theme changes
 #[derive(Debug, Clone)]
 pub enum UIMessage {
@@ -53,7 +42,7 @@ pub enum UIMessage {
 #[derive(Debug, Clone)]
 pub enum Message {
     Window(WindowMessage),
-    Audio(AudioMessage),
+    Audio(AudioCommand),
     UI(UIMessage),
 }
 
@@ -90,28 +79,8 @@ pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
             }
             WindowMessage::Close => window::get_latest().and_then(window::close).map(Message::Window),
         },
-        Message::Audio(audio_msg) => {
-            match audio_msg {
-                AudioMessage::Play(i) => {
-                    cnoise.process_audio_command(AudioCommand::Play(i));
-                }
-                AudioMessage::VolumeChanged(level) => {
-                    let (volume, track_id) = level;
-                    cnoise.process_audio_command(AudioCommand::SetVolume { track_id, volume });
-                }
-                AudioMessage::MasterVolumeChanged(volume) => {
-                    cnoise.process_audio_command(AudioCommand::SetMasterVolume(volume));
-                }
-                AudioMessage::StopAll => {
-                    cnoise.process_audio_command(AudioCommand::StopAll);
-                }
-                AudioMessage::PauseAll => {
-                    cnoise.process_audio_command(AudioCommand::PauseAll);
-                }
-                AudioMessage::ResumeAll => {
-                    cnoise.process_audio_command(AudioCommand::ResumeAll);
-                }
-            }
+        Message::Audio(audio_cmd) => {
+            cnoise.process_audio_command(audio_cmd);
             Task::none()
         }
         Message::UI(ui_msg) => {

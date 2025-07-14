@@ -10,6 +10,7 @@ use crate::ui::styles;
 use crate::utils::dragwin;
 use crate::utils::sine_wave_loading::SineWaveLoading;
 use crate::{SPACING, fl};
+use crate::audio::AudioCommand;
 
 use iced::Alignment::Center;
 
@@ -32,7 +33,7 @@ pub fn track_card(track: &NoiseTrack, index: usize) -> Element<dragwin::Message>
 
     button(card_content)
         .style(styles::card_button_style)
-        .on_press(dragwin::Message::Audio(dragwin::AudioMessage::Play(index)))
+        .on_press(dragwin::Message::Audio(AudioCommand::Play(index)))
         .into()
 }
 
@@ -47,7 +48,6 @@ fn track_header(track: &NoiseTrack) -> Row<dragwin::Message> {
 /// Create the appropriate icon based on track state
 fn track_icon(track: &NoiseTrack) -> Element<dragwin::Message> {
     use iced::widget::container;
-    use iced::Theme;
     let sine_loading = SineWaveLoading::new()
         .cycle_duration(Duration::from_secs(2))
         .radius(8.0)
@@ -55,9 +55,9 @@ fn track_icon(track: &NoiseTrack) -> Element<dragwin::Message> {
         .width(50)
         .height(50);
     match track.state {
-        PlaybackState::Stopped => container(sine_loading.style(|theme| styles::loader_primary_style(theme))),
-        PlaybackState::Paused => container(sine_loading.style(|theme| styles::loader_stopped_style(theme))),
-        _ => container(sine_loading.style(|theme| styles::loader_running_style(theme))),
+        PlaybackState::Stopped => container(sine_loading.style(styles::loader_primary_style)),
+        PlaybackState::Paused => container(sine_loading.style(styles::loader_stopped_style)),
+        _ => container(sine_loading.style(styles::loader_running_style)),
     }
     .into()
 }
@@ -137,7 +137,7 @@ pub fn volume_slider(track: &NoiseTrack, index: usize) -> Element<dragwin::Messa
     slider(
         0.0..=100.0,
         db_to_percentage(track.volume_level),
-        move |x| dragwin::Message::Audio(dragwin::AudioMessage::VolumeChanged((percentage_to_db(x), index))),
+        move |x| dragwin::Message::Audio(AudioCommand::SetVolume { track_id: index, volume: percentage_to_db(x) }),
     )
     .width(Length::Fill)
     .step(1.0)
@@ -194,7 +194,7 @@ pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
           slider(
             0.0..=100.0,
             db_to_percentage(master_volume),
-            |x| dragwin::Message::Audio(dragwin::AudioMessage::MasterVolumeChanged(percentage_to_db(x))),
+            |x| dragwin::Message::Audio(AudioCommand::SetMasterVolume(percentage_to_db(x))),
         )
         .width(80)
         .step(1.0)
@@ -203,13 +203,13 @@ pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
         text(format!("{}%", db_to_percentage(master_volume) as u8))
             .size(10).style(styles::secondary_text_style)
             .align_x(iced::alignment::Horizontal::Center),
-        action(play_icon(), "Resume", Some(dragwin::Message::Audio(dragwin::AudioMessage::ResumeAll))),
+        action(play_icon(), "Resume", Some(dragwin::Message::Audio(AudioCommand::ResumeAll))),
         action(
             pause_icon(),
             text(fl!("pause-all-icon")),
-            Some(dragwin::Message::Audio(dragwin::AudioMessage::PauseAll)),
+            Some(dragwin::Message::Audio(AudioCommand::PauseAll)),
         ),
-        action(stop_icon(), text(fl!("stop-icon")), Some(dragwin::Message::Audio(dragwin::AudioMessage::StopAll))),
+        action(stop_icon(), text(fl!("stop-icon")), Some(dragwin::Message::Audio(AudioCommand::StopAll))),
         iced::widget::Space::new(10, 10),
      
         horizontal_space(),
@@ -314,7 +314,7 @@ pub fn settings_view<'a>(current_theme: &crate::models::AppTheme) -> Element<'a,
     use crate::models::AppTheme;
     use iced::widget::{column, pick_list, text};
 
-    let theme_picker = pick_list(AppTheme::all(), Some(current_theme.clone()), |theme| {
+    let theme_picker = pick_list(AppTheme::all(), Some(*current_theme), |theme| {
         dragwin::Message::UI(dragwin::UIMessage::ThemeChanged(theme))
     });
 

@@ -179,16 +179,16 @@ impl AudioSystem {
             }
             AudioCommand::SetMasterVolume(volume) => {
                 // Implement master volume control
-                log::info!("Master volume set to: {}", volume);
-                
+                log::info!("Master volume set to: {volume}");
+
                 // Update the master volume in settings
                 self.default_settings.master_volume = volume;
-                
+
                 // Save master volume to configuration
                 if let Err(e) = crate::config::ConfigManager::save_master_volume(volume) {
-                    log::error!("Failed to save master volume to configuration: {}", e);
+                    log::error!("Failed to save master volume to configuration: {e}");
                 }
-                
+
                 // Apply master volume to all currently playing tracks
                 let tween = self.create_tween();
                 for (track_id, handle) in self.playing_handles.iter_mut() {
@@ -199,7 +199,7 @@ impl AudioSystem {
                     let clamped_volume = effective_volume.clamp(-60.0, 0.0);
                     handle.set_volume(clamped_volume, tween);
                 }
-                
+
                 events.push(AudioEvent::MasterVolumeChanged(volume));
             }
         }
