@@ -9,8 +9,6 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::Duration;
 
-use crate::errors::AppError;
-
 /// Core domain model representing an audio track
 #[derive(Debug, Clone, PartialEq)]
 pub struct NoiseTrack {
@@ -37,55 +35,6 @@ impl NoiseTrack {
             metadata: None,
         }
     }
-
-    /// Create a new track with custom volume
-    pub fn with_volume(name: String, path: PathBuf, volume_db: f32) -> Self {
-        Self {
-            name,
-            path,
-            volume_level: volume_db.clamp(MIN_VOLUME_DB, MAX_VOLUME_DB),
-            state: PlaybackState::Stopped,
-            metadata: None,
-        }
-    }
-
-    /// Check if the track is currently playing
-    pub fn is_playing(&self) -> bool {
-        matches!(self.state, PlaybackState::Playing)
-    }
-
-    /// Check if the track is currently paused
-    pub fn is_paused(&self) -> bool {
-        matches!(self.state, PlaybackState::Paused)
-    }
-
-    /// Check if the track is stopped
-    pub fn is_stopped(&self) -> bool {
-        matches!(self.state, PlaybackState::Stopped)
-    }
-
-    /// Get volume as percentage (0-100)
-    pub fn volume_percentage(&self) -> f32 {
-        crate::audio::db_to_percentage(self.volume_level)
-    }
-
-    /// Set volume from percentage (0-100)
-    pub fn set_volume_percentage(&mut self, percentage: f32) {
-        self.volume_level = crate::audio::percentage_to_db(percentage);
-    }
-
-    /// Get the file extension if available
-    pub fn file_extension(&self) -> Option<String> {
-        self.path
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .map(|s| s.to_lowercase())
-    }
-
-    /// Check if the file exists on disk
-    pub fn file_exists(&self) -> bool {
-        self.path.exists()
-    }
 }
 
 /// Optional metadata for audio tracks
@@ -94,7 +43,7 @@ pub struct TrackMetadata {
     /// Track duration in seconds (if known)
     pub duration: Option<f64>,
     /// Audio format (mp3, ogg, flac, wav)
-    pub format: Option<AudioFormat>,
+    pub format: Option<String>,
     /// Sample rate in Hz
     pub sample_rate: Option<u32>,
     /// Number of audio channels
@@ -118,46 +67,6 @@ impl Default for TrackMetadata {
             file_size: None,
             last_modified: None,
         }
-    }
-}
-
-/// Supported audio formats
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AudioFormat {
-    Mp3,
-    Ogg,
-    Flac,
-    Wav,
-    /// Other supported format
-    Other(u32),
-}
-
-impl AudioFormat {
-    /// Get the file extension for this format
-    pub fn extension(&self) -> &'static str {
-        match self {
-            AudioFormat::Mp3 => "mp3",
-            AudioFormat::Ogg => "ogg",
-            AudioFormat::Flac => "flac",
-            AudioFormat::Wav => "wav",
-            AudioFormat::Other(_) => "unknown",
-        }
-    }
-
-    /// Create format from file extension
-    pub fn from_extension(ext: &str) -> Option<Self> {
-        match ext.to_lowercase().as_str() {
-            "mp3" => Some(AudioFormat::Mp3),
-            "ogg" => Some(AudioFormat::Ogg),
-            "flac" => Some(AudioFormat::Flac),
-            "wav" => Some(AudioFormat::Wav),
-            _ => None,
-        }
-    }
-
-    /// Check if format is lossless
-    pub fn is_lossless(&self) -> bool {
-        matches!(self, AudioFormat::Flac | AudioFormat::Wav)
     }
 }
 
@@ -227,23 +136,6 @@ impl Default for AudioStats {
     }
 }
 
-impl AudioStats {
-    /// Check if any tracks are currently active (playing or paused)
-    pub fn has_active_tracks(&self) -> bool {
-        self.playing_tracks > 0 || self.paused_tracks > 0
-    }
-
-    /// Get the total number of loaded tracks
-    pub fn loaded_tracks(&self) -> usize {
-        self.total_tracks
-    }
-
-    /// Check if the audio system is in a healthy state
-    pub fn is_healthy(&self) -> bool {
-        self.is_initialized && self.cpu_usage.map_or(true, |cpu| cpu < 80.0)
-    }
-}
-
 /// Application-wide statistics and monitoring data
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppStats {
@@ -275,48 +167,6 @@ impl Default for AppStats {
             has_error: false,
             audio_initialized: false,
             uptime: Duration::from_secs(0),
-            memory_usage_mb: None,
-        }
-    }
-}
-
-impl AppStats {
-    /// Check if the application is in a good state
-    pub fn is_healthy(&self) -> bool {
-        !self.has_error && self.audio_initialized && self.loaded_tracks > 0
-    }
-
-    /// Get a human-readable status message
-    pub fn status_message(&self) -> String {
-        if !self.audio_initialized {
-            "Audio system not initialized".to_string()
-        } else if self.has_error {
-            "Application error occurred".to_string()
-        } else if self.loaded_tracks == 0 {
-            "No tracks found".to_string()
-        } else if self.playing_tracks > 0 {
-            format!("Playing {} tracks", self.playing_tracks)
-        } else if self.paused_tracks > 0 {
-            format!("{} tracks paused", self.paused_tracks)
-        } else {
-            format!("{} tracks ready", self.loaded_tracks)
-        }
-    }
-
-    /// Create AppStats from AudioStats
-    pub fn from_audio_stats(
-        audio_stats: &AudioStats,
-        total_tracks: usize,
-        has_error: bool,
-    ) -> Self {
-        Self {
-            total_tracks,
-            loaded_tracks: total_tracks,
-            playing_tracks: audio_stats.playing_tracks,
-            paused_tracks: audio_stats.paused_tracks,
-            has_error,
-            audio_initialized: audio_stats.is_initialized,
-            uptime: Duration::from_secs(0), // Will be updated by app
             memory_usage_mb: None,
         }
     }
@@ -488,14 +338,10 @@ impl Default for WindowSettings {
 // Constants used throughout the application
 /// Default volume in decibels
 pub const DEFAULT_VOLUME_DB: f32 = -30.0;
-/// Minimum volume in decibels
-pub const MIN_VOLUME_DB: f32 = -60.0;
-/// Maximum volume in decibels (safe limit)
+#[allow(dead_code)]
 pub const MAX_VOLUME_DB: f32 = 0.0;
-/// Application name
-pub const APP_NAME: &str = "Cosmic Noise";
-/// Application version
-pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+#[allow(dead_code)]
+pub const MIN_VOLUME_DB: f32 = -60.0;
 /// Supported audio file extensions
 pub const SUPPORTED_EXTENSIONS: &[&str] = &["mp3", "ogg", "flac", "wav"];
 /// Default sound directory name
@@ -528,17 +374,7 @@ mod tests {
             PathBuf::from("/test/path.mp3"),
             100.0, // Too high
         );
-        assert_eq!(track_high.volume_level, MAX_VOLUME_DB);
-    }
-
-    #[test]
-    fn test_audio_format() {
-        assert_eq!(AudioFormat::from_extension("mp3"), Some(AudioFormat::Mp3));
-        assert_eq!(AudioFormat::from_extension("MP3"), Some(AudioFormat::Mp3));
-        assert_eq!(AudioFormat::from_extension("unknown"), None);
-
-        assert!(AudioFormat::Flac.is_lossless());
-        assert!(!AudioFormat::Mp3.is_lossless());
+        assert_eq!(track_high.volume_level, DEFAULT_VOLUME_DB);
     }
 
     #[test]

@@ -88,14 +88,14 @@ use crate::common::FloatFuncs;
 /// functionality available on `BezPath`:
 ///
 /// - [`flatten`] does Bézier flattening, converting a curve to a series of
-/// line segments
+///   line segments
 /// - [`intersect_line`] computes intersections of a path with a line, useful
-/// for things like subdividing
+///   for things like subdividing
 ///
 /// [A Primer on Bézier Curves]: https://pomax.github.io/bezierinfo/
 /// [`iter`]: BezPath::iter
 /// [`segments`]: BezPath::segments
-/// [`flatten`]: BezPath::flatten
+/// [`flatten`]: flatten
 /// [`intersect_line`]: PathSeg::intersect_line
 /// [`segments` free function]: segments
 /// [`FromIterator<PathEl>`]: std::iter::FromIterator
@@ -175,8 +175,17 @@ pub struct MinDistance {
 
 impl BezPath {
     /// Create a new path.
+    #[inline(always)]
     pub fn new() -> BezPath {
-        Default::default()
+        BezPath::default()
+    }
+
+    /// Create a new path with the specified capacity.
+    ///
+    /// This can be useful if you already know how many path elements the path
+    /// will consist of, to prevent reallocations.
+    pub fn with_capacity(capacity: usize) -> BezPath {
+        BezPath(Vec::with_capacity(capacity))
     }
 
     /// Create a path from a vector of path elements.
@@ -193,7 +202,7 @@ impl BezPath {
     /// ```
     pub fn from_vec(v: Vec<PathEl>) -> BezPath {
         debug_assert!(
-            v.first().is_none() || matches!(v.first(), Some(PathEl::MoveTo(_))),
+            v.is_empty() || matches!(v.first(), Some(PathEl::MoveTo(_))),
             "BezPath must begin with MoveTo"
         );
         BezPath(v)
@@ -210,7 +219,7 @@ impl BezPath {
         debug_assert!(
             matches!(self.0.first(), Some(PathEl::MoveTo(_))),
             "BezPath must begin with MoveTo"
-        )
+        );
     }
 
     /// Push a "move to" element onto the path.
@@ -220,50 +229,57 @@ impl BezPath {
 
     /// Push a "line to" element onto the path.
     ///
-    /// Will panic with a debug assert when the current subpath does not
-    /// start with `move_to`.
+    /// Will panic with a debug assert when the path is empty and there is no
+    /// "move to" element on the path.
+    ///
+    /// If `line_to` is called immediately after `close_path` then the current
+    /// subpath starts at the initial point of the previous subpath.
     pub fn line_to<P: Into<Point>>(&mut self, p: P) {
-        debug_assert!(self.is_open_subpath(), "no open subpath (missing MoveTo)");
+        debug_assert!(!self.0.is_empty(), "uninitialized subpath (missing MoveTo)");
         self.push(PathEl::LineTo(p.into()));
     }
 
     /// Push a "quad to" element onto the path.
     ///
-    /// Will panic with a debug assert when the current subpath does not
-    /// start with `move_to`.
+    /// Will panic with a debug assert when the path is empty and there is no
+    /// "move to" element on the path.
+    ///
+    /// If `quad_to` is called immediately after `close_path` then the current
+    /// subpath starts at the initial point of the previous subpath.
     pub fn quad_to<P: Into<Point>>(&mut self, p1: P, p2: P) {
-        debug_assert!(self.is_open_subpath(), "no open subpath (missing MoveTo)");
+        debug_assert!(!self.0.is_empty(), "uninitialized subpath (missing MoveTo)");
         self.push(PathEl::QuadTo(p1.into(), p2.into()));
     }
 
     /// Push a "curve to" element onto the path.
     ///
-    /// Will panic with a debug assert when the current subpath does not
-    /// start with `move_to`.
+    /// Will panic with a debug assert when the path is empty and there is no
+    /// "move to" element on the path.
+    ///
+    /// If `curve_to` is called immediately after `close_path` then the current
+    /// subpath starts at the initial point of the previous subpath.
     pub fn curve_to<P: Into<Point>>(&mut self, p1: P, p2: P, p3: P) {
-        debug_assert!(self.is_open_subpath(), "no open subpath (missing MoveTo)");
+        debug_assert!(!self.0.is_empty(), "uninitialized subpath (missing MoveTo)");
         self.push(PathEl::CurveTo(p1.into(), p2.into(), p3.into()));
     }
 
     /// Push a "close path" element onto the path.
     ///
-    /// Will panic with a debug assert when the current subpath does not
-    /// start with `move_to`.
+    /// Will panic with a debug assert when the path is empty and there is no
+    /// "move to" element on the path.
     pub fn close_path(&mut self) {
-        debug_assert!(self.is_open_subpath(), "no open subpath (missing MoveTo)");
+        debug_assert!(!self.0.is_empty(), "uninitialized subpath (missing MoveTo)");
         self.push(PathEl::ClosePath);
     }
 
-    fn is_open_subpath(&self) -> bool {
-        !self.0.is_empty() && self.0.last() != Some(&PathEl::ClosePath)
-    }
-
     /// Get the path elements.
+    #[inline(always)]
     pub fn elements(&self) -> &[PathEl] {
         &self.0
     }
 
     /// Get the path elements (mut version).
+    #[inline(always)]
     pub fn elements_mut(&mut self) -> &mut [PathEl] {
         &mut self.0
     }
@@ -285,72 +301,8 @@ impl BezPath {
 
     /// Flatten the path, invoking the callback repeatedly.
     ///
-    /// Flattening is the action of approximating a curve with a succession of line segments.
-    ///
-    /// <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 30" height="30mm" width="120mm">
-    ///   <path d="M26.7 24.94l.82-11.15M44.46 5.1L33.8 7.34" fill="none" stroke="#55d400" stroke-width=".5"/>
-    ///   <path d="M26.7 24.94c.97-11.13 7.17-17.6 17.76-19.84M75.27 24.94l1.13-5.5 2.67-5.48 4-4.42L88 6.7l5.02-1.6" fill="none" stroke="#000"/>
-    ///   <path d="M77.57 19.37a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M77.57 19.37a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="#fff"/>
-    ///   <path d="M80.22 13.93a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.08 1.08" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M80.22 13.93a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.08 1.08" color="#000" fill="#fff"/>
-    ///   <path d="M84.08 9.55a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M84.08 9.55a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="#fff"/>
-    ///   <path d="M89.1 6.66a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.08-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M89.1 6.66a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.08-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="#fff"/>
-    ///   <path d="M94.4 5a1.1 1.1 0 0 1-1.1 1.1A1.1 1.1 0 0 1 92.23 5a1.1 1.1 0 0 1 1.08-1.08A1.1 1.1 0 0 1 94.4 5" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M94.4 5a1.1 1.1 0 0 1-1.1 1.1A1.1 1.1 0 0 1 92.23 5a1.1 1.1 0 0 1 1.08-1.08A1.1 1.1 0 0 1 94.4 5" color="#000" fill="#fff"/>
-    ///   <path d="M76.44 25.13a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M76.44 25.13a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="#fff"/>
-    ///   <path d="M27.78 24.9a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M27.78 24.9a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="#fff"/>
-    ///   <path d="M45.4 5.14a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M45.4 5.14a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="#fff"/>
-    ///   <path d="M28.67 13.8a1.1 1.1 0 0 1-1.1 1.08 1.1 1.1 0 0 1-1.08-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M28.67 13.8a1.1 1.1 0 0 1-1.1 1.08 1.1 1.1 0 0 1-1.08-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="#fff"/>
-    ///   <path d="M35 7.32a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1A1.1 1.1 0 0 1 35 7.33" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M35 7.32a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1A1.1 1.1 0 0 1 35 7.33" color="#000" fill="#fff"/>
-    ///   <text style="line-height:6.61458302px" x="35.74" y="284.49" font-size="5.29" font-family="Sans" letter-spacing="0" word-spacing="0" fill="#b3b3b3" stroke-width=".26" transform="translate(19.595 -267)">
-    ///     <tspan x="35.74" y="284.49" font-size="10.58">→</tspan>
-    ///   </text>
-    /// </svg>
-    ///
-    /// The tolerance value controls the maximum distance between the curved input
-    /// segments and their polyline approximations. (In technical terms, this is the
-    /// Hausdorff distance). The algorithm attempts to bound this distance between
-    /// by `tolerance` but this is not absolutely guaranteed. The appropriate value
-    /// depends on the use, but for antialiased rendering, a value of 0.25 has been
-    /// determined to give good results. The number of segments tends to scale as the
-    /// inverse square root of tolerance.
-    ///
-    /// <svg viewBox="0 0 47.5 13.2" height="100" width="350" xmlns="http://www.w3.org/2000/svg">
-    ///   <path d="M-2.44 9.53c16.27-8.5 39.68-7.93 52.13 1.9" fill="none" stroke="#dde9af" stroke-width="4.6"/>
-    ///   <path d="M-1.97 9.3C14.28 1.03 37.36 1.7 49.7 11.4" fill="none" stroke="#00d400" stroke-width=".57" stroke-linecap="round" stroke-dasharray="4.6, 2.291434"/>
-    ///   <path d="M-1.94 10.46L6.2 6.08l28.32-1.4 15.17 6.74" fill="none" stroke="#000" stroke-width=".6"/>
-    ///   <path d="M6.83 6.57a.9.9 0 0 1-1.25.15.9.9 0 0 1-.15-1.25.9.9 0 0 1 1.25-.15.9.9 0 0 1 .15 1.25" color="#000" stroke="#000" stroke-width=".57" stroke-linecap="round" stroke-opacity=".5"/>
-    ///   <path d="M35.35 5.3a.9.9 0 0 1-1.25.15.9.9 0 0 1-.15-1.25.9.9 0 0 1 1.25-.15.9.9 0 0 1 .15 1.24" color="#000" stroke="#000" stroke-width=".6" stroke-opacity=".5"/>
-    ///   <g fill="none" stroke="#ff7f2a" stroke-width=".26">
-    ///     <path d="M20.4 3.8l.1 1.83M19.9 4.28l.48-.56.57.52M21.02 5.18l-.5.56-.6-.53" stroke-width=".2978872"/>
-    ///   </g>
-    /// </svg>
-    ///
-    /// The callback will be called in order with each element of the generated
-    /// path. Because the result is made of polylines, these will be straight-line
-    /// path elements only, no curves.
-    ///
-    /// This algorithm is based on the blog post [Flattening quadratic Béziers]
-    /// but with some refinements. For one, there is a more careful approximation
-    /// at cusps. For two, the algorithm is extended to work with cubic Béziers
-    /// as well, by first subdividing into quadratics and then computing the
-    /// subdivision of each quadratic. However, as a clever trick, these quadratics
-    /// are subdivided fractionally, and their endpoints are not included.
-    ///
-    /// TODO: write a paper explaining this in more detail.
-    ///
-    /// Note: the [`flatten`] function provides the same
-    /// functionality but works with slices and other [`PathEl`] iterators.
-    ///
-    /// [Flattening quadratic Béziers]: https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
+    /// See [`flatten`] for more discussion.
+    #[deprecated(since = "0.11.1", note = "use the free function flatten instead")]
     pub fn flatten(&self, tolerance: f64, callback: impl FnMut(PathEl)) {
         flatten(self, tolerance, callback);
     }
@@ -374,7 +326,7 @@ impl BezPath {
             PathEl::LineTo(p) => p,
             PathEl::QuadTo(_, p2) => p2,
             PathEl::CurveTo(_, _, p3) => p3,
-            _ => return None,
+            PathEl::ClosePath => return None,
         };
         match self.0[ix] {
             PathEl::LineTo(p) => Some(PathSeg::Line(Line::new(last, p))),
@@ -386,7 +338,7 @@ impl BezPath {
                 }
                 _ => None,
             }),
-            _ => None,
+            PathEl::MoveTo(_) => None,
         }
     }
 
@@ -546,9 +498,69 @@ const TO_QUAD_TOL: f64 = 0.1;
 
 /// Flatten the path, invoking the callback repeatedly.
 ///
-/// See [`BezPath::flatten`] for more discussion.
-/// This signature is a bit more general, allowing flattening of `&[PathEl]` slices
-/// and other iterators yielding `PathEl`.
+/// Flattening is the action of approximating a curve with a succession of line segments.
+///
+/// <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 30" height="30mm" width="120mm">
+///   <path d="M26.7 24.94l.82-11.15M44.46 5.1L33.8 7.34" fill="none" stroke="#55d400" stroke-width=".5"/>
+///   <path d="M26.7 24.94c.97-11.13 7.17-17.6 17.76-19.84M75.27 24.94l1.13-5.5 2.67-5.48 4-4.42L88 6.7l5.02-1.6" fill="none" stroke="#000"/>
+///   <path d="M77.57 19.37a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M77.57 19.37a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="#fff"/>
+///   <path d="M80.22 13.93a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.08 1.08" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M80.22 13.93a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.08 1.08" color="#000" fill="#fff"/>
+///   <path d="M84.08 9.55a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M84.08 9.55a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="#fff"/>
+///   <path d="M89.1 6.66a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.08-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M89.1 6.66a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.08-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="#fff"/>
+///   <path d="M94.4 5a1.1 1.1 0 0 1-1.1 1.1A1.1 1.1 0 0 1 92.23 5a1.1 1.1 0 0 1 1.08-1.08A1.1 1.1 0 0 1 94.4 5" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M94.4 5a1.1 1.1 0 0 1-1.1 1.1A1.1 1.1 0 0 1 92.23 5a1.1 1.1 0 0 1 1.08-1.08A1.1 1.1 0 0 1 94.4 5" color="#000" fill="#fff"/>
+///   <path d="M76.44 25.13a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M76.44 25.13a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="#fff"/>
+///   <path d="M27.78 24.9a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M27.78 24.9a1.1 1.1 0 0 1-1.08 1.08 1.1 1.1 0 0 1-1.1-1.08 1.1 1.1 0 0 1 1.1-1.1 1.1 1.1 0 0 1 1.08 1.1" color="#000" fill="#fff"/>
+///   <path d="M45.4 5.14a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M45.4 5.14a1.1 1.1 0 0 1-1.08 1.1 1.1 1.1 0 0 1-1.1-1.1 1.1 1.1 0 0 1 1.1-1.08 1.1 1.1 0 0 1 1.1 1.08" color="#000" fill="#fff"/>
+///   <path d="M28.67 13.8a1.1 1.1 0 0 1-1.1 1.08 1.1 1.1 0 0 1-1.08-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M28.67 13.8a1.1 1.1 0 0 1-1.1 1.08 1.1 1.1 0 0 1-1.08-1.08 1.1 1.1 0 0 1 1.08-1.1 1.1 1.1 0 0 1 1.1 1.1" color="#000" fill="#fff"/>
+///   <path d="M35 7.32a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1A1.1 1.1 0 0 1 35 7.33" color="#000" fill="none" stroke="#030303" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M35 7.32a1.1 1.1 0 0 1-1.1 1.1 1.1 1.1 0 0 1-1.08-1.1 1.1 1.1 0 0 1 1.1-1.1A1.1 1.1 0 0 1 35 7.33" color="#000" fill="#fff"/>
+///   <text style="line-height:6.61458302px" x="35.74" y="284.49" font-size="5.29" font-family="Sans" letter-spacing="0" word-spacing="0" fill="#b3b3b3" stroke-width=".26" transform="translate(19.595 -267)">
+///     <tspan x="35.74" y="284.49" font-size="10.58">→</tspan>
+///   </text>
+/// </svg>
+///
+/// The tolerance value controls the maximum distance between the curved input
+/// segments and their polyline approximations. (In technical terms, this is the
+/// Hausdorff distance). The algorithm attempts to bound this distance between
+/// by `tolerance` but this is not absolutely guaranteed. The appropriate value
+/// depends on the use, but for antialiased rendering, a value of 0.25 has been
+/// determined to give good results. The number of segments tends to scale as the
+/// inverse square root of tolerance.
+///
+/// <svg viewBox="0 0 47.5 13.2" height="100" width="350" xmlns="http://www.w3.org/2000/svg">
+///   <path d="M-2.44 9.53c16.27-8.5 39.68-7.93 52.13 1.9" fill="none" stroke="#dde9af" stroke-width="4.6"/>
+///   <path d="M-1.97 9.3C14.28 1.03 37.36 1.7 49.7 11.4" fill="none" stroke="#00d400" stroke-width=".57" stroke-linecap="round" stroke-dasharray="4.6, 2.291434"/>
+///   <path d="M-1.94 10.46L6.2 6.08l28.32-1.4 15.17 6.74" fill="none" stroke="#000" stroke-width=".6"/>
+///   <path d="M6.83 6.57a.9.9 0 0 1-1.25.15.9.9 0 0 1-.15-1.25.9.9 0 0 1 1.25-.15.9.9 0 0 1 .15 1.25" color="#000" stroke="#000" stroke-width=".57" stroke-linecap="round" stroke-opacity=".5"/>
+///   <path d="M35.35 5.3a.9.9 0 0 1-1.25.15.9.9 0 0 1-.15-1.25.9.9 0 0 1 1.25-.15.9.9 0 0 1 .15 1.24" color="#000" stroke="#000" stroke-width=".6" stroke-opacity=".5"/>
+///   <g fill="none" stroke="#ff7f2a" stroke-width=".26">
+///     <path d="M20.4 3.8l.1 1.83M19.9 4.28l.48-.56.57.52M21.02 5.18l-.5.56-.6-.53" stroke-width=".2978872"/>
+///   </g>
+/// </svg>
+///
+/// The callback will be called in order with each element of the generated
+/// path. Because the result is made of polylines, these will be straight-line
+/// path elements only, no curves.
+///
+/// This algorithm is based on the blog post [Flattening quadratic Béziers]
+/// but with some refinements. For one, there is a more careful approximation
+/// at cusps. For two, the algorithm is extended to work with cubic Béziers
+/// as well, by first subdividing into quadratics and then computing the
+/// subdivision of each quadratic. However, as a clever trick, these quadratics
+/// are subdivided fractionally, and their endpoints are not included.
+///
+/// TODO: write a paper explaining this in more detail.
+///
+/// [Flattening quadratic Béziers]: https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
 pub fn flatten(
     path: impl IntoIterator<Item = PathEl>,
     tolerance: f64,
@@ -670,7 +682,7 @@ impl Mul<BezPath> for Affine {
     }
 }
 
-impl<'a> Mul<&'a BezPath> for Affine {
+impl Mul<&BezPath> for Affine {
     type Output = BezPath;
 
     fn mul(self, other: &BezPath) -> BezPath {
@@ -712,7 +724,7 @@ impl Mul<BezPath> for TranslateScale {
     }
 }
 
-impl<'a> Mul<&'a BezPath> for TranslateScale {
+impl Mul<&BezPath> for TranslateScale {
     type Output = BezPath;
 
     fn mul(self, other: &BezPath) -> BezPath {
@@ -793,7 +805,6 @@ impl<I: Iterator<Item = PathEl>> Iterator for Segments<I> {
 impl<I: Iterator<Item = PathEl>> Segments<I> {
     /// Here, `accuracy` specifies the accuracy for each Bézier segment. At worst,
     /// the total error is `accuracy` times the number of Bézier segments.
-
     // TODO: pub? Or is this subsumed by method of &[PathEl]?
     pub(crate) fn perimeter(self, accuracy: f64) -> f64 {
         self.map(|seg| seg.arclen(accuracy)).sum()
@@ -817,7 +828,7 @@ impl<I: Iterator<Item = PathEl>> Segments<I> {
             if let Some(bb) = bbox {
                 bbox = Some(bb.union(seg_bb));
             } else {
-                bbox = Some(seg_bb)
+                bbox = Some(seg_bb);
             }
         }
         bbox.unwrap_or_default()
@@ -1079,7 +1090,7 @@ impl PathSeg {
                 let c1 = dy * px1 - dx * py1;
                 let c2 = dy * px2 - dx * py2;
                 let invlen2 = (dx * dx + dy * dy).recip();
-                for t in crate::common::solve_quadratic(c0, c1, c2) {
+                for t in solve_quadratic(c0, c1, c2) {
                     if (-EPSILON..=(1.0 + EPSILON)).contains(&t) {
                         let x = px0 + t * px1 + t * t * px2;
                         let y = py0 + t * py1 + t * t * py2;
@@ -1099,7 +1110,7 @@ impl PathSeg {
                 let c2 = dy * px2 - dx * py2;
                 let c3 = dy * px3 - dx * py3;
                 let invlen2 = (dx * dx + dy * dy).recip();
-                for t in crate::common::solve_cubic(c0, c1, c2, c3) {
+                for t in solve_cubic(c0, c1, c2, c3) {
                     if (-EPSILON..=(1.0 + EPSILON)).contains(&t) {
                         let x = px0 + t * px1 + t * t * px2 + t * t * t * px3;
                         let y = py0 + t * py1 + t * t * py2 + t * t * t * py3;
@@ -1153,7 +1164,7 @@ impl PathSeg {
                 a.push(c.p2.to_vec2());
                 a.push(c.p3.to_vec2());
             }
-        };
+        }
         a
     }
 
@@ -1225,6 +1236,7 @@ impl PathSeg {
 }
 
 impl LineIntersection {
+    #[inline(always)]
     fn new(line_t: f64, segment_t: f64) -> Self {
         LineIntersection { line_t, segment_t }
     }
@@ -1260,18 +1272,21 @@ fn cubic_bez_coefs(x0: f64, x1: f64, x2: f64, x3: f64) -> (f64, f64, f64, f64) {
 }
 
 impl From<CubicBez> for PathSeg {
+    #[inline(always)]
     fn from(cubic_bez: CubicBez) -> PathSeg {
         PathSeg::Cubic(cubic_bez)
     }
 }
 
 impl From<Line> for PathSeg {
+    #[inline(always)]
     fn from(line: Line) -> PathSeg {
         PathSeg::Line(line)
     }
 }
 
 impl From<QuadBez> for PathSeg {
+    #[inline(always)]
     fn from(quad_bez: QuadBez) -> PathSeg {
         PathSeg::Quad(quad_bez)
     }
@@ -1288,6 +1303,7 @@ impl Shape for BezPath {
         self.clone()
     }
 
+    #[inline(always)]
     fn into_path(self, _tolerance: f64) -> BezPath {
         self
     }
@@ -1310,6 +1326,7 @@ impl Shape for BezPath {
         self.elements().bounding_box()
     }
 
+    #[inline(always)]
     fn as_path_slice(&self) -> Option<&[PathEl]> {
         Some(&self.0)
     }
@@ -1347,7 +1364,7 @@ impl PathEl {
             PathEl::LineTo(p1) => Some(*p1),
             PathEl::QuadTo(_, p2) => Some(*p2),
             PathEl::CurveTo(_, _, p3) => Some(*p3),
-            _ => None,
+            PathEl::ClosePath => None,
         }
     }
 }
@@ -1358,8 +1375,9 @@ impl PathEl {
 /// If the slice starts with `LineTo`, `QuadTo`, or `CurveTo`, it will be treated as a `MoveTo`.
 impl<'a> Shape for &'a [PathEl] {
     type PathElementsIter<'iter>
-
-    = core::iter::Copied<core::slice::Iter<'a, PathEl>> where 'a: 'iter;
+        = core::iter::Copied<core::slice::Iter<'a, PathEl>>
+    where
+        'a: 'iter;
 
     #[inline]
     fn path_elements(&self, _tolerance: f64) -> Self::PathElementsIter<'_> {
@@ -1388,7 +1406,7 @@ impl<'a> Shape for &'a [PathEl] {
         segments(self.iter().copied()).bounding_box()
     }
 
-    #[inline]
+    #[inline(always)]
     fn as_path_slice(&self) -> Option<&[PathEl]> {
         Some(self)
     }
@@ -1428,7 +1446,7 @@ impl<const N: usize> Shape for [PathEl; N] {
         segments(self.iter().copied()).bounding_box()
     }
 
-    #[inline]
+    #[inline(always)]
     fn as_path_slice(&self) -> Option<&[PathEl]> {
         Some(self)
     }
@@ -1443,7 +1461,7 @@ pub struct PathSegIter {
 impl Shape for PathSeg {
     type PathElementsIter<'iter> = PathSegIter;
 
-    #[inline]
+    #[inline(always)]
     fn path_elements(&self, _tolerance: f64) -> PathSegIter {
         PathSegIter { seg: *self, ix: 0 }
     }
@@ -1460,6 +1478,7 @@ impl Shape for PathSeg {
         self.arclen(accuracy)
     }
 
+    #[inline(always)]
     fn winding(&self, _pt: Point) -> i32 {
         0
     }
@@ -1507,7 +1526,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "no open subpath")]
+    #[should_panic(expected = "uninitialized subpath")]
     fn test_elements_to_segments_starts_on_closepath() {
         let mut path = BezPath::new();
         path.close_path();
@@ -1529,7 +1548,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "no open subpath")]
+    #[should_panic(expected = "uninitialized subpath")]
     fn test_must_not_start_on_quad() {
         let mut path = BezPath::new();
         path.quad_to((5.0, 5.0), (10.0, 10.0));
@@ -1676,7 +1695,7 @@ mod tests {
                 PathEl::ClosePath,
                 PathEl::MoveTo((4.0, 4.0).into()),
             ],
-        )
+        );
     }
 
     // The following are direct port of fonttools'
@@ -1702,7 +1721,7 @@ mod tests {
                 PathEl::LineTo((0.0, 0.0).into()), // closing line NOT implied
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1722,7 +1741,7 @@ mod tests {
                 PathEl::LineTo((0.0, 0.0).into()), // closing line NOT implied
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1742,7 +1761,7 @@ mod tests {
                 PathEl::LineTo((0.0, 0.0).into()),
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1758,7 +1777,7 @@ mod tests {
                 PathEl::LineTo((0.0, 0.0).into()), // closing line NOT implied
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1776,7 +1795,7 @@ mod tests {
                 PathEl::CurveTo((2.0, 2.0).into(), (1.0, 1.0).into(), (0.0, 0.0).into()),
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1794,7 +1813,7 @@ mod tests {
                 PathEl::CurveTo((2.0, 2.0).into(), (1.0, 1.0).into(), (0.0, 0.0).into()),
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1814,7 +1833,7 @@ mod tests {
                 PathEl::LineTo((0.0, 0.0).into()), // ... does NOT become implied
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1832,7 +1851,7 @@ mod tests {
                 PathEl::QuadTo((1.0, 1.0).into(), (0.0, 0.0).into()),
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1850,7 +1869,7 @@ mod tests {
                 PathEl::QuadTo((1.0, 1.0).into(), (0.0, 0.0).into()),
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1868,12 +1887,12 @@ mod tests {
                 PathEl::LineTo((0.0, 0.0).into()), // ... does NOT become implied
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
     fn test_reverse_empty() {
-        reverse_test_helper(vec![], vec![])
+        reverse_test_helper(vec![], vec![]);
     }
 
     #[test]
@@ -1881,7 +1900,7 @@ mod tests {
         reverse_test_helper(
             vec![PathEl::MoveTo((0.0, 0.0).into())],
             vec![PathEl::MoveTo((0.0, 0.0).into())],
-        )
+        );
     }
 
     #[test]
@@ -1889,7 +1908,7 @@ mod tests {
         reverse_test_helper(
             vec![PathEl::MoveTo((0.0, 0.0).into()), PathEl::ClosePath],
             vec![PathEl::MoveTo((0.0, 0.0).into()), PathEl::ClosePath],
-        )
+        );
     }
 
     #[test]
@@ -1903,7 +1922,7 @@ mod tests {
                 PathEl::MoveTo((1.0, 1.0).into()),
                 PathEl::LineTo((0.0, 0.0).into()),
             ],
-        )
+        );
     }
 
     #[test]
@@ -1917,7 +1936,7 @@ mod tests {
                 PathEl::MoveTo((3.0, 3.0).into()),
                 PathEl::CurveTo((2.0, 2.0).into(), (1.0, 1.0).into(), (0.0, 0.0).into()),
             ],
-        )
+        );
     }
 
     #[test]
@@ -1933,7 +1952,7 @@ mod tests {
                 PathEl::LineTo((3.0, 3.0).into()),
                 PathEl::CurveTo((2.0, 2.0).into(), (1.0, 1.0).into(), (0.0, 0.0).into()),
             ],
-        )
+        );
     }
 
     #[test]
@@ -1949,7 +1968,7 @@ mod tests {
                 PathEl::CurveTo((3.0, 3.0).into(), (2.0, 2.0).into(), (1.0, 1.0).into()),
                 PathEl::LineTo((0.0, 0.0).into()),
             ],
-        )
+        );
     }
 
     #[test]
@@ -1971,7 +1990,7 @@ mod tests {
                 PathEl::LineTo((848.0, 348.0).into()),
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     #[test]
@@ -1994,7 +2013,7 @@ mod tests {
                 PathEl::LineTo((0.0, 651.0).into()),
                 PathEl::ClosePath,
             ],
-        )
+        );
     }
 
     fn reverse_test_helper(contour: Vec<PathEl>, expected: Vec<PathEl>) {

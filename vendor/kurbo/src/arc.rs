@@ -13,7 +13,7 @@ use core::{
 #[cfg(not(feature = "std"))]
 use crate::common::FloatFuncs;
 
-/// A single arc segment.
+/// A single elliptical arc segment.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -33,6 +33,7 @@ pub struct Arc {
 
 impl Arc {
     /// Create a new `Arc`.
+    #[inline(always)]
     pub fn new(
         center: impl Into<Point>,
         radii: impl Into<Vec2>,
@@ -46,6 +47,22 @@ impl Arc {
             start_angle,
             sweep_angle,
             x_rotation,
+        }
+    }
+
+    /// Returns a copy of this `Arc` in the opposite direction.
+    ///
+    /// The new `Arc` will sweep towards the original `Arc`s
+    /// start angle.
+    #[must_use]
+    #[inline]
+    pub fn reversed(&self) -> Arc {
+        Self {
+            center: self.center,
+            radii: self.radii,
+            start_angle: self.start_angle + self.sweep_angle,
+            sweep_angle: -self.sweep_angle,
+            x_rotation: self.x_rotation,
         }
     }
 
@@ -80,9 +97,9 @@ impl Arc {
         }
     }
 
-    /// Converts an Arc into a series of cubic bezier segments.
+    /// Converts an `Arc` into a series of cubic bezier segments.
     ///
-    /// Closure will be invoked for each segment.
+    /// The closure `p` will be invoked with the control points for each segment.
     pub fn to_cubic_beziers<P>(self, tolerance: f64, mut p: P)
     where
         P: FnMut(Point, Point, Point),
@@ -170,12 +187,9 @@ impl Shape for Arc {
         PI * x * y
     }
 
-    /// The perimeter of the ellipse.
+    /// The perimeter of the arc.
     ///
-    /// Note: Finding the perimeter of an ellipse is [fairly involved][wikipedia],
-    /// so for now we just approximate by using the bezier curve representation.
-    ///
-    /// [wikipedia]: https://en.wikipedia.org/wiki/Ellipse#Circumference
+    /// For now we just approximate by using the bezier curve representation.
     #[inline]
     fn perimeter(&self, accuracy: f64) -> f64 {
         self.path_segments(0.1).perimeter(accuracy)
@@ -207,5 +221,26 @@ impl Mul<Arc> for Affine {
             start_angle: arc.start_angle,
             sweep_angle: arc.sweep_angle,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn reversed_arc() {
+        let a = Arc::new((0., 0.), (1., 0.), 0., PI, 0.);
+        let f = a.reversed();
+
+        // Most fields should be unchanged:
+        assert_eq!(a.center, f.center);
+        assert_eq!(a.radii, f.radii);
+        assert_eq!(a.x_rotation, f.x_rotation);
+
+        // Sweep angle should be in reverse
+        assert_eq!(a.sweep_angle, -f.sweep_angle);
+
+        // Reversing it again should result in the original arc
+        assert_eq!(a, f.reversed());
     }
 }

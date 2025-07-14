@@ -43,23 +43,37 @@ impl Affine {
     /// [Wikipedia](https://en.wikipedia.org/wiki/Affine_transformation)
     /// formulation of affine transformation as augmented matrix. The
     /// idea is that `(A * B) * v == A * (B * v)`, where `*` is the
-    /// [`Mul`](std::ops::Mul) trait.
-    #[inline]
+    /// [`Mul`] trait.
+    #[inline(always)]
     pub const fn new(c: [f64; 6]) -> Affine {
         Affine(c)
     }
 
     /// An affine transform representing uniform scaling.
-    #[inline]
+    #[inline(always)]
     pub const fn scale(s: f64) -> Affine {
         Affine([s, 0.0, 0.0, s, 0.0, 0.0])
     }
 
     /// An affine transform representing non-uniform scaling
     /// with different scale values for x and y
-    #[inline]
+    #[inline(always)]
     pub const fn scale_non_uniform(s_x: f64, s_y: f64) -> Affine {
         Affine([s_x, 0.0, 0.0, s_y, 0.0, 0.0])
+    }
+
+    /// An affine transform representing a scale of `scale` about `center`.
+    ///
+    /// Useful for a view transform that zooms at a specific point,
+    /// while keeping that point fixed in the result space.
+    ///
+    /// See [`Affine::scale()`] for more info.
+    #[inline]
+    pub fn scale_about(s: f64, center: Point) -> Affine {
+        let center = center.to_vec2();
+        Self::translate(-center)
+            .then_scale(s)
+            .then_translate(center)
     }
 
     /// An affine transform representing rotation.
@@ -88,7 +102,7 @@ impl Affine {
     }
 
     /// An affine transform representing translation.
-    #[inline]
+    #[inline(always)]
     pub fn translate<V: Into<Vec2>>(p: V) -> Affine {
         let p = p.into();
         Affine([1.0, 0.0, 0.0, 1.0, p.x, p.y])
@@ -107,7 +121,7 @@ impl Affine {
     /// ```
     /// let oblique_transform = kurbo::Affine::skew(20f64.to_radians().tan(), 0.0);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn skew(skew_x: f64, skew_y: f64) -> Affine {
         Affine([1.0, skew_y, skew_x, 1.0, 0.0, 0.0])
     }
@@ -156,90 +170,121 @@ impl Affine {
         aff.pre_translate(-point.to_vec2())
     }
 
-    /// A rotation by `th` followed by `self`.
+    /// A [rotation] by `th` followed by `self`.
     ///
     /// Equivalent to `self * Affine::rotate(th)`
+    ///
+    /// [rotation]: Affine::rotate
     #[inline]
     #[must_use]
     pub fn pre_rotate(self, th: f64) -> Self {
         self * Affine::rotate(th)
     }
 
-    /// A rotation by `th` about `center` followed by `self`.
+    /// A [rotation] by `th` about `center` followed by `self`.
     ///
-    /// Equivalent to `self * Affine::rotate_about(th)`
+    /// Equivalent to `self * Affine::rotate_about(th, center)`
+    ///
+    /// [rotation]: Affine::rotate_about
     #[inline]
     #[must_use]
     pub fn pre_rotate_about(self, th: f64, center: Point) -> Self {
         Affine::rotate_about(th, center) * self
     }
 
-    /// A scale by `scale` followed by `self`.
+    /// A [scale] by `scale` followed by `self`.
     ///
     /// Equivalent to `self * Affine::scale(scale)`
+    ///
+    /// [scale]: Affine::scale
     #[inline]
     #[must_use]
     pub fn pre_scale(self, scale: f64) -> Self {
         self * Affine::scale(scale)
     }
 
-    /// A scale by `(scale_x, scale_y)` followed by `self`.
+    /// A [scale] by `(scale_x, scale_y)` followed by `self`.
     ///
     /// Equivalent to `self * Affine::scale_non_uniform(scale_x, scale_y)`
+    ///
+    /// [scale]: Affine::scale_non_uniform
     #[inline]
     #[must_use]
     pub fn pre_scale_non_uniform(self, scale_x: f64, scale_y: f64) -> Self {
         self * Affine::scale_non_uniform(scale_x, scale_y)
     }
 
-    /// A translation of `trans` followed by `self`.
+    /// A [translation] of `trans` followed by `self`.
     ///
     /// Equivalent to `self * Affine::translate(trans)`
+    ///
+    /// [translation]: Affine::translate
     #[inline]
     #[must_use]
     pub fn pre_translate(self, trans: Vec2) -> Self {
         self * Affine::translate(trans)
     }
 
-    /// `self` followed by a rotation of `th`.
+    /// `self` followed by a [rotation] of `th`.
     ///
     /// Equivalent to `Affine::rotate(th) * self`
+    ///
+    /// [rotation]: Affine::rotate
     #[inline]
     #[must_use]
     pub fn then_rotate(self, th: f64) -> Self {
         Affine::rotate(th) * self
     }
 
-    /// `self` followed by a rotation of `th` about `center`.
+    /// `self` followed by a [rotation] of `th` about `center`.
     ///
     /// Equivalent to `Affine::rotate_about(th, center) * self`
+    ///
+    /// [rotation]: Affine::rotate_about
     #[inline]
     #[must_use]
     pub fn then_rotate_about(self, th: f64, center: Point) -> Self {
         Affine::rotate_about(th, center) * self
     }
 
-    /// `self` followed by a scale of `scale`.
+    /// `self` followed by a [scale] of `scale`.
     ///
     /// Equivalent to `Affine::scale(scale) * self`
+    ///
+    /// [scale]: Affine::scale
     #[inline]
     #[must_use]
     pub fn then_scale(self, scale: f64) -> Self {
         Affine::scale(scale) * self
     }
 
-    /// `self` followed by a scale of `(scale_x, scale_y)`.
+    /// `self` followed by a [scale] of `(scale_x, scale_y)`.
     ///
     /// Equivalent to `Affine::scale_non_uniform(scale_x, scale_y) * self`
+    ///
+    /// [scale]: Affine::scale_non_uniform
     #[inline]
     #[must_use]
     pub fn then_scale_non_uniform(self, scale_x: f64, scale_y: f64) -> Self {
         Affine::scale_non_uniform(scale_x, scale_y) * self
     }
 
+    /// `self` followed by a [scale] of `scale` about `center`.
+    ///
+    /// Equivalent to `Affine::scale_about(scale) * self`
+    ///
+    /// [scale]: Affine::scale_about
+    #[inline]
+    #[must_use]
+    pub fn then_scale_about(self, scale: f64, center: Point) -> Self {
+        Affine::scale_about(scale, center) * self
+    }
+
     /// `self` followed by a translation of `trans`.
     ///
     /// Equivalent to `Affine::translate(trans) * self`
+    ///
+    /// [translation]: Affine::translate
     #[inline]
     #[must_use]
     pub fn then_translate(mut self, trans: Vec2) -> Self {
@@ -257,7 +302,7 @@ impl Affine {
     }
 
     /// Get the coefficients of the transform.
-    #[inline]
+    #[inline(always)]
     pub fn as_coeffs(self) -> [f64; 6] {
         self.0
     }
@@ -297,7 +342,9 @@ impl Affine {
         Rect::from_points(p00, p01).union(Rect::from_points(p10, p11))
     }
 
-    /// Is this map finite?
+    /// Is this map [finite]?
+    ///
+    /// [finite]: f64::is_finite
     #[inline]
     pub fn is_finite(&self) -> bool {
         self.0[0].is_finite()
@@ -308,7 +355,9 @@ impl Affine {
             && self.0[5].is_finite()
     }
 
-    /// Is this map NaN?
+    /// Is this map [NaN]?
+    ///
+    /// [NaN]: f64::is_nan
     #[inline]
     pub fn is_nan(&self) -> bool {
         self.0[0].is_nan()
@@ -337,10 +386,10 @@ impl Affine {
     /// any) circle about its center always results in the same circle. This is the reason that an
     /// ellipse mapped using an affine map is always an ellipse.
     ///
-    /// Will return NaNs if the matrix (or equivalently the linear map) is singular.
+    /// Will return NaNs if the matrix (or equivalently the linear map) is non-finite.
     ///
-    /// First part of the return tuple is the scaling, second part is the angle of rotation (in
-    /// radians)
+    /// The first part of the returned tuple is the scaling, the second part is the angle of
+    /// rotation (in radians).
     #[inline]
     pub(crate) fn svd(self) -> (Vec2, f64) {
         let a = self.0[0];
@@ -366,7 +415,7 @@ impl Affine {
     }
 
     /// Returns the translation part of this affine map (`(self.0[4], self.0[5])`).
-    #[inline]
+    #[inline(always)]
     pub fn translation(self) -> Vec2 {
         Vec2 {
             x: self.0[4],
@@ -378,7 +427,7 @@ impl Affine {
     ///
     /// The translation can be seen as being applied after the linear part of the map.
     #[must_use]
-    #[inline]
+    #[inline(always)]
     pub fn with_translation(mut self, trans: Vec2) -> Affine {
         self.0[4] = trans.x;
         self.0[5] = trans.y;
@@ -387,7 +436,7 @@ impl Affine {
 }
 
 impl Default for Affine {
-    #[inline]
+    #[inline(always)]
     fn default() -> Affine {
         Affine::IDENTITY
     }
@@ -447,7 +496,7 @@ impl Mul<Affine> for f64 {
 // Conversions to and from mint
 #[cfg(feature = "mint")]
 impl From<Affine> for mint::ColumnMatrix2x3<f64> {
-    #[inline]
+    #[inline(always)]
     fn from(a: Affine) -> mint::ColumnMatrix2x3<f64> {
         mint::ColumnMatrix2x3 {
             x: mint::Vector2 {
@@ -468,7 +517,7 @@ impl From<Affine> for mint::ColumnMatrix2x3<f64> {
 
 #[cfg(feature = "mint")]
 impl From<mint::ColumnMatrix2x3<f64>> for Affine {
-    #[inline]
+    #[inline(always)]
     fn from(m: mint::ColumnMatrix2x3<f64>) -> Affine {
         Affine([m.x.x, m.x.y, m.y.x, m.y.y, m.z.x, m.z.y])
     }
@@ -562,5 +611,30 @@ mod tests {
         assert_near(map * Point::new(1., 0.), Point::new(1., 0.));
         assert_near(map * Point::new(2., 1.), Point::new(2., 1.));
         assert_near(map * Point::new(2., 2.), Point::new(3., 1.));
+    }
+
+    #[test]
+    fn svd() {
+        let a = Affine::new([1., 2., 3., 4., 5., 6.]);
+        let a_no_translate = a.with_translation(Vec2::ZERO);
+
+        // translation should have no effect
+        let (scale, rotation) = a.svd();
+        let (scale_no_translate, rotation_no_translate) = a_no_translate.svd();
+        assert_near(scale.to_point(), scale_no_translate.to_point());
+        assert!((rotation - rotation_no_translate).abs() <= 1e-9);
+
+        assert_near(
+            scale.to_point(),
+            Point::new(5.4649857042190427, 0.36596619062625782),
+        );
+        assert!((rotation - 0.95691013360780001).abs() <= 1e-9);
+
+        // singular affine
+        let a = Affine::new([0., 0., 0., 0., 5., 6.]);
+        assert_eq!(a.determinant(), 0.);
+        let (scale, rotation) = a.svd();
+        assert_eq!(scale, Vec2::new(0., 0.));
+        assert_eq!(rotation, 0.);
     }
 }

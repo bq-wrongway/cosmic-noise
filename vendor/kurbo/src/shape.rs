@@ -14,7 +14,7 @@ use crate::{segments, BezPath, Circle, Line, PathEl, Point, Rect, RoundedRect, S
 /// [`area`]: Shape::area
 /// [`bounding_box`]: Shape::bounding_box
 /// [`winding`]: Shape::winding
-pub trait Shape: Sized {
+pub trait Shape {
     /// The iterator returned by the [`path_elements`] method.
     ///
     /// [`path_elements`]: Shape::path_elements
@@ -73,6 +73,7 @@ pub trait Shape: Sized {
     fn to_bez_path(&self, tolerance: f64) -> Self::PathElementsIter<'_> {
         self.path_elements(tolerance)
     }
+
     /// Convert into a Bézier path.
     ///
     /// This allocates in the general case, but is zero-cost if the
@@ -81,13 +82,19 @@ pub trait Shape: Sized {
     /// The `tolerance` parameter is the same as for [`path_elements()`].
     ///
     /// [`path_elements()`]: Shape::path_elements
-    fn into_path(self, tolerance: f64) -> BezPath {
+    fn into_path(self, tolerance: f64) -> BezPath
+    where
+        Self: Sized,
+    {
         self.to_path(tolerance)
     }
 
     #[deprecated(since = "0.7.0", note = "Use into_path instead")]
     #[doc(hidden)]
-    fn into_bez_path(self, tolerance: f64) -> BezPath {
+    fn into_bez_path(self, tolerance: f64) -> BezPath
+    where
+        Self: Sized,
+    {
         self.into_path(tolerance)
     }
 
@@ -132,7 +139,15 @@ pub trait Shape: Sized {
 
     /// Returns `true` if the [`Point`] is inside this shape.
     ///
-    /// This is only meaningful for closed shapes.
+    /// This is only meaningful for closed shapes. Some shapes may have specialized
+    /// implementations of this function or of [`winding`] determination.
+    ///
+    /// The default implementation uses the non-zero winding rule.
+    ///
+    /// To determine containment using the even-odd winding rule, check the
+    /// [`winding`] directly.
+    ///
+    /// [`winding`]: Self::winding
     fn contains(&self, pt: Point) -> bool {
         self.winding(pt) != 0
     }
@@ -174,8 +189,10 @@ pub trait Shape: Sized {
 /// Blanket implementation so `impl Shape` will accept owned or reference.
 impl<'a, T: Shape> Shape for &'a T {
     type PathElementsIter<'iter>
-
-    = T::PathElementsIter<'iter> where T: 'iter, 'a: 'iter;
+        = T::PathElementsIter<'iter>
+    where
+        T: 'iter,
+        'a: 'iter;
 
     fn path_elements(&self, tolerance: f64) -> Self::PathElementsIter<'_> {
         (*self).path_elements(tolerance)

@@ -33,7 +33,7 @@ pub fn main() -> iced::Result {
             transparent: true,
             decorations: false,
             size: Size::new(800., 650.),
-            min_size: Some(Size::new(500., 350.)),
+            min_size: Some(Size::new(550., 350.)),
             visible: true,
 
             ..Default::default()

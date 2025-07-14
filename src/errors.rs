@@ -14,8 +14,6 @@ pub enum AppError {
     Audio(AudioError),
     /// Configuration related errors
     Config(ConfigError),
-    /// UI related errors
-    UI(UIError),
 }
 
 /// File system related errors
@@ -50,8 +48,6 @@ pub enum AudioError {
     UnsupportedChannelConfiguration,
     /// Symphonia decoder error
     DecoderError(String),
-    /// Audio device not available
-    DeviceNotAvailable,
     /// Playback error during runtime
     PlaybackError(String),
 }
@@ -59,25 +55,8 @@ pub enum AudioError {
 /// Configuration related errors
 #[derive(Debug, Clone, PartialEq)]
 pub enum ConfigError {
-    /// Failed to load configuration
-    LoadFailed,
     /// Failed to save configuration
     SaveFailed,
-    /// Invalid configuration format
-    InvalidFormat,
-    /// Missing required configuration key
-    MissingKey(String),
-}
-
-/// UI related errors
-#[derive(Debug, Clone, PartialEq)]
-pub enum UIError {
-    /// Failed to render component
-    RenderFailed,
-    /// Invalid UI state
-    InvalidState,
-    /// Theme loading failed
-    ThemeLoadFailed,
 }
 
 impl fmt::Display for AppError {
@@ -86,7 +65,6 @@ impl fmt::Display for AppError {
             AppError::FileSystem(e) => write!(f, "File system error: {}", e),
             AppError::Audio(e) => write!(f, "Audio error: {}", e),
             AppError::Config(e) => write!(f, "Configuration error: {}", e),
-            AppError::UI(e) => write!(f, "UI error: {}", e),
         }
     }
 }
@@ -140,9 +118,6 @@ impl fmt::Display for AudioError {
             AudioError::DecoderError(msg) => {
                 write!(f, "Audio decoder error: {}", msg)
             }
-            AudioError::DeviceNotAvailable => {
-                write!(f, "Audio device not available")
-            }
             AudioError::PlaybackError(msg) => {
                 write!(f, "Playback error: {}", msg)
             }
@@ -153,33 +128,8 @@ impl fmt::Display for AudioError {
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ConfigError::LoadFailed => {
-                write!(f, "Failed to load configuration")
-            }
             ConfigError::SaveFailed => {
                 write!(f, "Failed to save configuration")
-            }
-            ConfigError::InvalidFormat => {
-                write!(f, "Invalid configuration format")
-            }
-            ConfigError::MissingKey(key) => {
-                write!(f, "Missing required configuration key: {}", key)
-            }
-        }
-    }
-}
-
-impl fmt::Display for UIError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            UIError::RenderFailed => {
-                write!(f, "Failed to render UI component")
-            }
-            UIError::InvalidState => {
-                write!(f, "Invalid UI state")
-            }
-            UIError::ThemeLoadFailed => {
-                write!(f, "Failed to load theme")
             }
         }
     }
@@ -189,10 +139,6 @@ impl std::error::Error for AppError {}
 impl std::error::Error for FileSystemError {}
 impl std::error::Error for AudioError {}
 impl std::error::Error for ConfigError {}
-impl std::error::Error for UIError {}
-
-/// Convenience type alias for Results using AppError
-pub type AppResult<T> = Result<T, AppError>;
 
 /// Helper functions for error conversion
 impl From<FileSystemError> for AppError {
@@ -210,12 +156,6 @@ impl From<AudioError> for AppError {
 impl From<ConfigError> for AppError {
     fn from(error: ConfigError) -> Self {
         AppError::Config(error)
-    }
-}
-
-impl From<UIError> for AppError {
-    fn from(error: UIError) -> Self {
-        AppError::UI(error)
     }
 }
 

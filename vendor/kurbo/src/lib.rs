@@ -64,23 +64,53 @@
 //! efficient as the standard library, and that this crate still uses the
 //! `alloc` crate regardless.
 //!
-//! [`Piet`]: https://docs.rs/piet
-//! [`Druid`]: https://docs.rs/druid
 //! [`libm`]: https://docs.rs/libm
 
-#![forbid(unsafe_code)]
-#![deny(missing_docs, clippy::trivially_copy_pass_by_ref)]
-#![warn(clippy::doc_markdown, rustdoc::broken_intra_doc_links)]
+// LINEBENDER LINT SET - lib.rs - v1
+// See https://linebender.org/wiki/canonical-lints/
+// These lints aren't included in Cargo.toml because they
+// shouldn't apply to examples and tests
+#![warn(unused_crate_dependencies)]
+#![warn(clippy::print_stdout, clippy::print_stderr)]
+// END LINEBENDER LINT SET
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(all(not(feature = "std"), not(test)), no_std)]
 #![allow(
     clippy::unreadable_literal,
     clippy::many_single_char_names,
     clippy::excessive_precision,
     clippy::bool_to_int_with_if
 )]
-#![cfg_attr(all(not(feature = "std"), not(test)), no_std)]
+// The following lints are part of the Linebender standard set,
+// but resolving them has been deferred for now.
+// Feel free to send a PR that solves one or more of these.
+#![allow(
+    missing_debug_implementations,
+    elided_lifetimes_in_paths,
+    single_use_lifetimes,
+    trivial_numeric_casts,
+    unnameable_types,
+    clippy::use_self,
+    clippy::return_self_not_must_use,
+    clippy::cast_possible_truncation,
+    clippy::wildcard_imports,
+    clippy::shadow_unrelated,
+    clippy::missing_assert_message,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::exhaustive_enums,
+    clippy::match_same_arms,
+    clippy::partial_pub_fields,
+    clippy::unseparated_literal_suffix,
+    clippy::duplicated_attributes
+)]
 
 #[cfg(not(any(feature = "std", feature = "libm")))]
 compile_error!("kurbo requires either the `std` or `libm` feature");
+
+// Suppress the unused_crate_dependencies lint when both std and libm are specified.
+#[cfg(all(feature = "std", feature = "libm"))]
+use libm as _;
 
 extern crate alloc;
 
@@ -107,31 +137,41 @@ mod shape;
 pub mod simplify;
 mod size;
 mod stroke;
-#[cfg(feature = "std")]
 mod svg;
 mod translate_scale;
+mod triangle;
 mod vec2;
 
-pub use crate::affine::*;
-pub use crate::arc::*;
-pub use crate::bezpath::*;
-pub use crate::circle::*;
-pub use crate::cubicbez::*;
-pub use crate::ellipse::*;
-pub use crate::fit::*;
-pub use crate::insets::*;
-pub use crate::line::*;
-pub use crate::param_curve::*;
-pub use crate::point::*;
-pub use crate::quadbez::*;
-pub use crate::quadspline::*;
-pub use crate::rect::*;
-pub use crate::rounded_rect::*;
-pub use crate::rounded_rect_radii::*;
-pub use crate::shape::*;
-pub use crate::size::*;
-pub use crate::stroke::*;
-#[cfg(feature = "std")]
-pub use crate::svg::*;
-pub use crate::translate_scale::*;
-pub use crate::vec2::*;
+pub use crate::affine::Affine;
+pub use crate::arc::{Arc, ArcAppendIter};
+pub use crate::bezpath::{
+    flatten, segments, BezPath, LineIntersection, MinDistance, PathEl, PathSeg, PathSegIter,
+    Segments,
+};
+pub use crate::circle::{Circle, CirclePathIter, CircleSegment};
+pub use crate::cubicbez::{cubics_to_quadratic_splines, CubicBez, CubicBezIter, CuspType};
+pub use crate::ellipse::Ellipse;
+pub use crate::fit::{
+    fit_to_bezpath, fit_to_bezpath_opt, fit_to_cubic, CurveFitSample, ParamCurveFit,
+};
+pub use crate::insets::Insets;
+pub use crate::line::{ConstPoint, Line, LinePathIter};
+pub use crate::param_curve::{
+    Nearest, ParamCurve, ParamCurveArclen, ParamCurveArea, ParamCurveCurvature, ParamCurveDeriv,
+    ParamCurveExtrema, ParamCurveNearest, DEFAULT_ACCURACY, MAX_EXTREMA,
+};
+pub use crate::point::Point;
+pub use crate::quadbez::{QuadBez, QuadBezIter};
+pub use crate::quadspline::QuadSpline;
+pub use crate::rect::{Rect, RectPathIter};
+pub use crate::rounded_rect::{RoundedRect, RoundedRectPathIter};
+pub use crate::rounded_rect_radii::RoundedRectRadii;
+pub use crate::shape::Shape;
+pub use crate::size::Size;
+pub use crate::stroke::{
+    dash, stroke, Cap, DashIterator, Dashes, Join, Stroke, StrokeOptLevel, StrokeOpts,
+};
+pub use crate::svg::{SvgArc, SvgParseError};
+pub use crate::translate_scale::TranslateScale;
+pub use crate::triangle::{Triangle, TrianglePathIter};
+pub use crate::vec2::Vec2;

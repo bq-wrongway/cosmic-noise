@@ -6,7 +6,7 @@ use crate::models::{AppTheme, NoiseTrack, View};
 
 use crate::utils::files;
 use iced::Task;
-use log::{error, info, warn};
+use log::{info};
 
 /// Main application state
 pub struct CosmicNoise {

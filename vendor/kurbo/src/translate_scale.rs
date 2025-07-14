@@ -36,7 +36,7 @@ use crate::{
 /// `2.0 * TranslateScale::translate(Vec2::new(1.0, 0.0))` as this case
 /// has an implicit conversion).
 ///
-/// This transformation is less powerful than `Affine`, but can be applied
+/// This transformation is less powerful than [`Affine`], but can be applied
 /// to more primitives, especially including [`Rect`].
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
@@ -50,26 +50,26 @@ pub struct TranslateScale {
 
 impl TranslateScale {
     /// Create a new transformation from translation and scale.
-    #[inline]
+    #[inline(always)]
     pub const fn new(translation: Vec2, scale: f64) -> TranslateScale {
         TranslateScale { translation, scale }
     }
 
     /// Create a new transformation with scale only.
-    #[inline]
+    #[inline(always)]
     pub const fn scale(s: f64) -> TranslateScale {
         TranslateScale::new(Vec2::ZERO, s)
     }
 
     /// Create a new transformation with translation only.
-    #[inline]
+    #[inline(always)]
     pub fn translate(translation: impl Into<Vec2>) -> TranslateScale {
         TranslateScale::new(translation.into(), 1.0)
     }
 
     /// Decompose transformation into translation and scale.
     #[deprecated(note = "use the struct fields directly")]
-    #[inline]
+    #[inline(always)]
     pub const fn as_tuple(self) -> (Vec2, f64) {
         (self.translation, self.scale)
     }
@@ -91,11 +91,11 @@ impl TranslateScale {
     /// assert_near(ts * Point::new(2., 2.), Point::new(3., 3.));
     /// ```
     #[inline]
-    pub fn from_scale_about(scale: f64, focus: Point) -> Self {
+    pub fn from_scale_about(scale: f64, focus: impl Into<Point>) -> Self {
         // We need to create a transform that is equivalent to translating `focus`
         // to the origin, followed by a normal scale, followed by reversing the translation.
         // We need to find the (translation ∘ scale) that matches this.
-        let focus = focus.to_vec2();
+        let focus = focus.into().to_vec2();
         let translation = focus - focus * scale;
         Self::new(translation, scale)
     }
@@ -116,13 +116,17 @@ impl TranslateScale {
         }
     }
 
-    /// Is this translate/scale finite?
+    /// Is this translate/scale [finite]?
+    ///
+    /// [finite]: f64::is_finite
     #[inline]
     pub fn is_finite(&self) -> bool {
         self.translation.is_finite() && self.scale.is_finite()
     }
 
-    /// Is this translate/scale NaN?
+    /// Is this translate/scale [NaN]?
+    ///
+    /// [NaN]: f64::is_nan
     #[inline]
     pub fn is_nan(&self) -> bool {
         self.translation.is_nan() || self.scale.is_nan()
@@ -130,13 +134,14 @@ impl TranslateScale {
 }
 
 impl Default for TranslateScale {
-    #[inline]
+    #[inline(always)]
     fn default() -> TranslateScale {
         TranslateScale::new(Vec2::ZERO, 1.0)
     }
 }
 
 impl From<TranslateScale> for Affine {
+    #[inline(always)]
     fn from(ts: TranslateScale) -> Affine {
         let TranslateScale { translation, scale } = ts;
         Affine::new([scale, 0.0, 0.0, scale, translation.x, translation.y])

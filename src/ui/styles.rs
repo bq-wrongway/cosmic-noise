@@ -115,74 +115,9 @@ pub fn error_text_style(theme: &Theme) -> text::Style {
     }
 }
 
-pub fn success_text_style(theme: &Theme) -> text::Style {
-    text::Style {
-        color: Some(theme.extended_palette().success.strong.color),
-    }
-}
-
-pub fn warning_text_style(theme: &Theme) -> text::Style {
-    text::Style {
-        color: Some(theme.extended_palette().background.base.text),
-    }
-}
-
-pub fn primary_text_style(theme: &Theme) -> text::Style {
-    text::Style {
-        color: Some(theme.extended_palette().primary.strong.color),
-    }
-}
-
 /// Style function for secondary text
 pub fn secondary_text_style(theme: &Theme) -> text::Style {
     text::Style {
         color: Some(theme.extended_palette().background.base.text),
-    }
-}
-
-/// Style function for muted text
-pub fn muted_text_style(theme: &Theme) -> text::Style {
-    text::Style {
-        color: Some(theme.extended_palette().background.weak.text),
-    }
-}
-
-pub fn app_background_color(theme: &Theme) -> Color {
-    theme.palette().background
-}
-
-pub fn primary_color(theme: &Theme) -> Color {
-    theme.extended_palette().primary.strong.color
-}
-
-pub fn secondary_color(theme: &Theme) -> Color {
-    theme.extended_palette().secondary.strong.color
-}
-
-pub fn danger_color(theme: &Theme) -> Color {
-    theme.extended_palette().danger.strong.color
-}
-
-pub fn success_color(theme: &Theme) -> Color {
-    theme.extended_palette().success.strong.color
-}
-
-pub fn warning_color(theme: &Theme) -> Color {
-    theme.extended_palette().background.base.text
-}
-
-pub fn rounded_border(radius: f32) -> Border {
-    Border {
-        radius: radius.into(),
-        width: 1.0,
-        color: Color::TRANSPARENT,
-    }
-}
-
-pub fn colored_border(color: Color, width: f32, radius: f32) -> Border {
-    Border {
-        color,
-        width,
-        radius: radius.into(),
     }
 }

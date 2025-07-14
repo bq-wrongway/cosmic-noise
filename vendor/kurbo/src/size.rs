@@ -27,8 +27,11 @@ impl Size {
     /// A size with zero width or height.
     pub const ZERO: Size = Size::new(0., 0.);
 
+    /// A size with width and height set to `f64::INFINITY`.
+    pub const INFINITY: Size = Size::new(f64::INFINITY, f64::INFINITY);
+
     /// Create a new `Size` with the provided `width` and `height`.
-    #[inline]
+    #[inline(always)]
     pub const fn new(width: f64, height: f64) -> Self {
         Size { width, height }
     }
@@ -66,11 +69,57 @@ impl Size {
     }
 
     /// Whether this size has zero area.
+    #[doc(alias = "is_empty")]
+    #[inline]
+    pub fn is_zero_area(self) -> bool {
+        self.area() == 0.0
+    }
+
+    /// Whether this size has zero area.
     ///
     /// Note: a size with negative area is not considered empty.
     #[inline]
+    #[deprecated(since = "0.11.1", note = "use is_zero_area instead")]
     pub fn is_empty(self) -> bool {
-        self.area() == 0.0
+        self.is_zero_area()
+    }
+
+    /// Returns the component-wise minimum of `self` and `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kurbo::Size;
+    ///
+    /// let this = Size::new(0., 100.);
+    /// let other = Size::new(10., 10.);
+    ///
+    /// assert_eq!(this.min(other), Size::new(0., 10.));
+    /// ```
+    pub fn min(self, other: Size) -> Self {
+        Size {
+            width: self.width.min(other.width),
+            height: self.height.min(other.height),
+        }
+    }
+
+    /// Returns the component-wise maximum of `self` and `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kurbo::Size;
+    ///
+    /// let this = Size::new(0., 100.);
+    /// let other = Size::new(10., 10.);
+    ///
+    /// assert_eq!(this.max(other), Size::new(10., 100.));
+    /// ```
+    pub fn max(self, other: Size) -> Self {
+        Size {
+            width: self.width.max(other.width),
+            height: self.height.max(other.height),
+        }
     }
 
     /// Returns a new size bounded by `min` and `max.`
@@ -86,20 +135,18 @@ impl Size {
     /// assert_eq!(this.clamp(min, max), Size::new(10., 50.))
     /// ```
     pub fn clamp(self, min: Size, max: Size) -> Self {
-        let width = self.width.max(min.width).min(max.width);
-        let height = self.height.max(min.height).min(max.height);
-        Size { width, height }
+        self.max(min).min(max)
     }
 
     /// Convert this size into a [`Vec2`], with `width` mapped to `x` and `height`
     /// mapped to `y`.
-    #[inline]
+    #[inline(always)]
     pub const fn to_vec2(self) -> Vec2 {
         Vec2::new(self.width, self.height)
     }
 
     /// Returns a new `Size`,
-    /// with `width` and `height` rounded to the nearest integer.
+    /// with `width` and `height` [rounded] to the nearest integer.
     ///
     /// # Examples
     ///
@@ -112,13 +159,15 @@ impl Size {
     /// assert_eq!(size_neg.width, -3.0);
     /// assert_eq!(size_neg.height, -4.0);
     /// ```
+    ///
+    /// [rounded]: f64::round
     #[inline]
     pub fn round(self) -> Size {
         Size::new(self.width.round(), self.height.round())
     }
 
     /// Returns a new `Size`,
-    /// with `width` and `height` rounded up to the nearest integer,
+    /// with `width` and `height` [rounded up] to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -132,13 +181,15 @@ impl Size {
     /// assert_eq!(size_neg.width, -3.0);
     /// assert_eq!(size_neg.height, -3.0);
     /// ```
+    ///
+    /// [rounded up]: f64::ceil
     #[inline]
     pub fn ceil(self) -> Size {
         Size::new(self.width.ceil(), self.height.ceil())
     }
 
     /// Returns a new `Size`,
-    /// with `width` and `height` rounded down to the nearest integer,
+    /// with `width` and `height` [rounded down] to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -152,13 +203,15 @@ impl Size {
     /// assert_eq!(size_neg.width, -4.0);
     /// assert_eq!(size_neg.height, -4.0);
     /// ```
+    ///
+    /// [rounded down]: f64::floor
     #[inline]
     pub fn floor(self) -> Size {
         Size::new(self.width.floor(), self.height.floor())
     }
 
     /// Returns a new `Size`,
-    /// with `width` and `height` rounded away from zero to the nearest integer,
+    /// with `width` and `height` [rounded away] from zero to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -172,13 +225,15 @@ impl Size {
     /// assert_eq!(size_neg.width, -4.0);
     /// assert_eq!(size_neg.height, -4.0);
     /// ```
+    ///
+    /// [rounded away]: FloatExt::expand
     #[inline]
     pub fn expand(self) -> Size {
         Size::new(self.width.expand(), self.height.expand())
     }
 
     /// Returns a new `Size`,
-    /// with `width` and `height` rounded down towards zero the nearest integer,
+    /// with `width` and `height` [rounded towards] zero to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -192,6 +247,8 @@ impl Size {
     /// assert_eq!(size_neg.width, -3.0);
     /// assert_eq!(size_neg.height, -3.0);
     /// ```
+    ///
+    /// [rounded towards]: f64::trunc
     #[inline]
     pub fn trunc(self) -> Size {
         Size::new(self.width.trunc(), self.height.trunc())
@@ -206,7 +263,7 @@ impl Size {
     }
 
     /// Convert this `Size` into a [`Rect`] with origin `(0.0, 0.0)`.
-    #[inline]
+    #[inline(always)]
     pub const fn to_rect(self) -> Rect {
         Rect::new(0., 0., self.width, self.height)
     }
@@ -218,13 +275,17 @@ impl Size {
         self.to_rect().to_rounded_rect(radii)
     }
 
-    /// Is this size finite?
+    /// Is this size [finite]?
+    ///
+    /// [finite]: f64::is_finite
     #[inline]
     pub fn is_finite(self) -> bool {
         self.width.is_finite() && self.height.is_finite()
     }
 
-    /// Is this size NaN?
+    /// Is this size [NaN]?
+    ///
+    /// [NaN]: f64::is_nan
     #[inline]
     pub fn is_nan(self) -> bool {
         self.width.is_nan() || self.height.is_nan()
@@ -337,7 +398,7 @@ impl SubAssign<Size> for Size {
 }
 
 impl From<(f64, f64)> for Size {
-    #[inline]
+    #[inline(always)]
     fn from(v: (f64, f64)) -> Size {
         Size {
             width: v.0,
@@ -347,7 +408,7 @@ impl From<(f64, f64)> for Size {
 }
 
 impl From<Size> for (f64, f64) {
-    #[inline]
+    #[inline(always)]
     fn from(v: Size) -> (f64, f64) {
         (v.width, v.height)
     }

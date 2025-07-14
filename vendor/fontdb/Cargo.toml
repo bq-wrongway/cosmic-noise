@@ -13,7 +13,7 @@
 edition = "2018"
 rust-version = "1.60"
 name = "fontdb"
-version = "0.16.2"
+version = "0.18.0"
 authors = ["Yevhenii Reizner <razrfalcon@gmail.com>"]
 description = "A simple, in-memory font database with CSS-like queries."
 documentation = "https://docs.rs/fontdb/"
@@ -45,7 +45,7 @@ version = "1.6.0"
 features = ["alloc"]
 
 [dependencies.ttf-parser]
-version = "0.20"
+version = "0.21"
 features = [
     "opentype-layout",
     "apple-layout",

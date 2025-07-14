@@ -31,7 +31,7 @@ impl Rect {
     pub const ZERO: Rect = Rect::new(0., 0., 0., 0.);
 
     /// A new rectangle from minimum and maximum coordinates.
-    #[inline]
+    #[inline(always)]
     pub const fn new(x0: f64, y0: f64, x1: f64, y1: f64) -> Rect {
         Rect { x0, y0, x1, y1 }
     }
@@ -142,7 +142,7 @@ impl Rect {
     ///
     /// This is the top left corner in a y-down space and with
     /// non-negative width and height.
-    #[inline]
+    #[inline(always)]
     pub fn origin(&self) -> Point {
         Point::new(self.x0, self.y0)
     }
@@ -160,11 +160,19 @@ impl Rect {
     }
 
     /// Whether this rectangle has zero area.
+    #[doc(alias = "is_empty")]
+    #[inline]
+    pub fn is_zero_area(&self) -> bool {
+        self.area() == 0.0
+    }
+
+    /// Whether this rectangle has zero area.
     ///
     /// Note: a rectangle with negative area is not considered empty.
     #[inline]
+    #[deprecated(since = "0.11.1", note = "use is_zero_area instead")]
     pub fn is_empty(&self) -> bool {
-        self.area() == 0.0
+        self.is_zero_area()
     }
 
     /// The center point of the rectangle.
@@ -222,6 +230,11 @@ impl Rect {
     ///
     /// The result is zero-area if either input has negative width or
     /// height. The result always has non-negative width and height.
+    ///
+    /// If you want to determine whether two rectangles intersect, use the
+    /// [`overlaps`] method instead.
+    ///
+    /// [`overlaps`]: Rect::overlaps
     #[inline]
     pub fn intersect(&self, other: Rect) -> Rect {
         let x0 = self.x0.max(other.x0);
@@ -229,6 +242,64 @@ impl Rect {
         let x1 = self.x1.min(other.x1);
         let y1 = self.y1.min(other.y1);
         Rect::new(x0, y0, x1.max(x0), y1.max(y0))
+    }
+
+    /// Determines whether this rectangle overlaps with another in any way.
+    ///
+    /// Note that the edge of the rectangle is considered to be part of itself, meaning
+    /// that two rectangles that share an edge are considered to overlap.
+    ///
+    /// Returns `true` if the rectangles overlap, `false` otherwise.
+    ///
+    /// If you want to compute the *intersection* of two rectangles, use the
+    /// [`intersect`] method instead.
+    ///
+    /// [`intersect`]: Rect::intersect
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kurbo::Rect;
+    ///
+    /// let rect1 = Rect::new(0.0, 0.0, 10.0, 10.0);
+    /// let rect2 = Rect::new(5.0, 5.0, 15.0, 15.0);
+    /// assert!(rect1.overlaps(rect2));
+    ///
+    /// let rect1 = Rect::new(0.0, 0.0, 10.0, 10.0);
+    /// let rect2 = Rect::new(10.0, 0.0, 20.0, 10.0);
+    /// assert!(rect1.overlaps(rect2));
+    /// ```
+    #[inline]
+    pub fn overlaps(&self, other: Rect) -> bool {
+        self.x0 <= other.x1 && self.x1 >= other.x0 && self.y0 <= other.y1 && self.y1 >= other.y0
+    }
+
+    /// Returns whether this rectangle contains another rectangle.
+    ///
+    /// A rectangle is considered to contain another rectangle if the other
+    /// rectangle is fully enclosed within the bounds of this rectangle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kurbo::Rect;
+    ///
+    /// let rect1 = Rect::new(0.0, 0.0, 10.0, 10.0);
+    /// let rect2 = Rect::new(2.0, 2.0, 4.0, 4.0);
+    /// assert!(rect1.contains_rect(rect2));
+    /// ```
+    ///
+    /// Two equal rectangles are considered to contain each other.
+    ///
+    /// ```
+    /// use kurbo::Rect;
+    ///
+    /// let rect = Rect::new(0.0, 0.0, 10.0, 10.0);
+    /// assert!(rect.contains_rect(rect));
+    /// ```
+    #[inline]
+    pub fn contains_rect(&self, other: Rect) -> bool {
+        self.x0 <= other.x0 && self.y0 <= other.y0 && self.x1 >= other.x1 && self.y1 >= other.y1
     }
 
     /// Expand a rectangle by a constant amount in both directions.
@@ -245,7 +316,7 @@ impl Rect {
     }
 
     /// Returns a new `Rect`,
-    /// with each coordinate value rounded to the nearest integer.
+    /// with each coordinate value [rounded] to the nearest integer.
     ///
     /// # Examples
     ///
@@ -257,6 +328,8 @@ impl Rect {
     /// assert_eq!(rect.x1, 3.0);
     /// assert_eq!(rect.y1, -3.0);
     /// ```
+    ///
+    /// [rounded]: f64::round
     #[inline]
     pub fn round(self) -> Rect {
         Rect::new(
@@ -268,7 +341,7 @@ impl Rect {
     }
 
     /// Returns a new `Rect`,
-    /// with each coordinate value rounded up to the nearest integer,
+    /// with each coordinate value [rounded up] to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -281,6 +354,8 @@ impl Rect {
     /// assert_eq!(rect.x1, 3.0);
     /// assert_eq!(rect.y1, -3.0);
     /// ```
+    ///
+    /// [rounded up]: f64::ceil
     #[inline]
     pub fn ceil(self) -> Rect {
         Rect::new(
@@ -292,7 +367,7 @@ impl Rect {
     }
 
     /// Returns a new `Rect`,
-    /// with each coordinate value rounded down to the nearest integer,
+    /// with each coordinate value [rounded down] to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -305,6 +380,8 @@ impl Rect {
     /// assert_eq!(rect.x1, 3.0);
     /// assert_eq!(rect.y1, -4.0);
     /// ```
+    ///
+    /// [rounded down]: f64::floor
     #[inline]
     pub fn floor(self) -> Rect {
         Rect::new(
@@ -447,7 +524,7 @@ impl Rect {
     }
 
     /// Creates a new [`RoundedRect`] from this `Rect` and the provided
-    /// corner radius.
+    /// corner [radius](RoundedRectRadii).
     #[inline]
     pub fn to_rounded_rect(self, radii: impl Into<RoundedRectRadii>) -> RoundedRect {
         RoundedRect::from_rect(self, radii)
@@ -518,13 +595,17 @@ impl Rect {
         }
     }
 
-    /// Is this rectangle finite?
+    /// Is this rectangle [finite]?
+    ///
+    /// [finite]: f64::is_finite
     #[inline]
     pub fn is_finite(&self) -> bool {
         self.x0.is_finite() && self.x1.is_finite() && self.y0.is_finite() && self.y1.is_finite()
     }
 
-    /// Is this rectangle NaN?
+    /// Is this rectangle [NaN]?
+    ///
+    /// [NaN]: f64::is_nan
     #[inline]
     pub fn is_nan(&self) -> bool {
         self.x0.is_nan() || self.y0.is_nan() || self.x1.is_nan() || self.y1.is_nan()
@@ -532,6 +613,7 @@ impl Rect {
 }
 
 impl From<(Point, Point)> for Rect {
+    #[inline(always)]
     fn from(points: (Point, Point)) -> Rect {
         Rect::from_points(points.0, points.1)
     }
@@ -624,7 +706,7 @@ impl Shape for Rect {
         self.abs()
     }
 
-    #[inline]
+    #[inline(always)]
     fn as_rect(&self) -> Option<Rect> {
         Some(*self)
     }
@@ -767,5 +849,62 @@ mod tests {
     fn aspect_ratio() {
         let test = Rect::new(0.0, 0.0, 1.0, 1.0);
         assert!((test.aspect_ratio() - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn contained_rect_overlaps() {
+        let outer = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let inner = Rect::new(2.0, 2.0, 4.0, 4.0);
+        assert!(outer.overlaps(inner));
+    }
+
+    #[test]
+    fn overlapping_rect_overlaps() {
+        let a = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let b = Rect::new(5.0, 5.0, 15.0, 15.0);
+        assert!(a.overlaps(b));
+    }
+
+    #[test]
+    fn disjoint_rect_overlaps() {
+        let a = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let b = Rect::new(11.0, 11.0, 15.0, 15.0);
+        assert!(!a.overlaps(b));
+    }
+
+    #[test]
+    fn sharing_edge_overlaps() {
+        let a = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let b = Rect::new(10.0, 0.0, 20.0, 10.0);
+        assert!(a.overlaps(b));
+    }
+
+    // Test the two other directions in case there is a bug that only appears in one direction.
+    #[test]
+    fn disjoint_rect_overlaps_negative() {
+        let a = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let b = Rect::new(-10.0, -10.0, -5.0, -5.0);
+        assert!(!a.overlaps(b));
+    }
+
+    #[test]
+    fn contained_rectangle_contains() {
+        let outer = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let inner = Rect::new(2.0, 2.0, 4.0, 4.0);
+        assert!(outer.contains_rect(inner));
+    }
+
+    #[test]
+    fn overlapping_rectangle_contains() {
+        let outer = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let inner = Rect::new(5.0, 5.0, 15.0, 15.0);
+        assert!(!outer.contains_rect(inner));
+    }
+
+    #[test]
+    fn disjoint_rectangle_contains() {
+        let outer = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let inner = Rect::new(11.0, 11.0, 15.0, 15.0);
+        assert!(!outer.contains_rect(inner));
     }
 }

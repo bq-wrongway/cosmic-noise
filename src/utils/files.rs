@@ -19,18 +19,26 @@ pub fn get_stem(name: &Path) -> String {
 pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
     let mut tracks = Vec::new();
     let mut seen = std::collections::HashSet::new();
+    let mut any_dir_exists = false;
 
     // Always check Flatpak bundled dir first
     if let Some(flatpak_path) = get_flatpak_dir() {
         if flatpak_path.exists() {
+            any_dir_exists = true;
             for entry in walkdir::WalkDir::new(&flatpak_path)
                 .max_depth(1)
                 .follow_links(false)
                 .into_iter()
-                .filter_map(Result::ok)
             {
+                let entry = match entry {
+                    Ok(e) => e,
+                    Err(_) => return Err(AppError::FileSystem(FileSystemError::DirectoryReadError)),
+                };
                 let path = entry.path();
-                if path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS) {
+                if path.is_file() {
+                    if !path.has_extension(SUPPORTED_EXTENSIONS) {
+                        return Err(AppError::FileSystem(FileSystemError::InvalidFileFormat));
+                    }
                     let name = get_stem(path);
                     if seen.insert(name.clone()) {
                         tracks.push(NoiseTrack::new(name, path.to_path_buf()));
@@ -42,14 +50,21 @@ pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
     // Then check user data dir
     if let Some(data_path) = data_dir_exists() {
         if data_path.exists() {
+            any_dir_exists = true;
             for entry in walkdir::WalkDir::new(&data_path)
                 .max_depth(1)
                 .follow_links(false)
                 .into_iter()
-                .filter_map(Result::ok)
             {
+                let entry = match entry {
+                    Ok(e) => e,
+                    Err(_) => return Err(AppError::FileSystem(FileSystemError::DirectoryReadError)),
+                };
                 let path = entry.path();
-                if path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS) {
+                if path.is_file() {
+                    if !path.has_extension(SUPPORTED_EXTENSIONS) {
+                        return Err(AppError::FileSystem(FileSystemError::InvalidFileFormat));
+                    }
                     let name = get_stem(path);
                     if seen.insert(name.clone()) {
                         tracks.push(NoiseTrack::new(name, path.to_path_buf()));
@@ -61,14 +76,21 @@ pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
     // Then check user config dir
     if let Some(config_path) = config_dir_exists() {
         if config_path.exists() {
+            any_dir_exists = true;
             for entry in walkdir::WalkDir::new(&config_path)
                 .max_depth(1)
                 .follow_links(false)
                 .into_iter()
-                .filter_map(Result::ok)
             {
+                let entry = match entry {
+                    Ok(e) => e,
+                    Err(_) => return Err(AppError::FileSystem(FileSystemError::DirectoryReadError)),
+                };
                 let path = entry.path();
-                if path.is_file() && path.has_extension(SUPPORTED_EXTENSIONS) {
+                if path.is_file() {
+                    if !path.has_extension(SUPPORTED_EXTENSIONS) {
+                        return Err(AppError::FileSystem(FileSystemError::InvalidFileFormat));
+                    }
                     let name = get_stem(path);
                     if seen.insert(name.clone()) {
                         tracks.push(NoiseTrack::new(name, path.to_path_buf()));
@@ -78,7 +100,11 @@ pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
         }
     }
     if tracks.is_empty() {
-        Err(AppError::FileSystem(FileSystemError::DirectoryNotFound))
+        if any_dir_exists {
+            Ok(tracks)
+        } else {
+            Err(AppError::FileSystem(FileSystemError::DirectoryNotFound))
+        }
     } else {
         Ok(tracks)
     }

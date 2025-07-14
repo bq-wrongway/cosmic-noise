@@ -9,7 +9,7 @@ use crate::ui::components::{empty_state, error_display, settings_view, spacer, t
 use crate::utils::dragwin;
 
 use iced::Element;
-use iced::widget::{column, container, grid, row, scrollable};
+use iced::widget::{column,center, container, grid, row, scrollable};
 
 /// Main view function that renders the entire application
 pub fn main_view(app: &CosmicNoise) -> Element<Message> {
@@ -22,13 +22,13 @@ pub fn main_view(app: &CosmicNoise) -> Element<Message> {
 fn content_area(app: &CosmicNoise) -> Element<dragwin::Message> {
     match app.current_view {
         View::Player => {
+            // Show error if present
+            if let Some(error) = &app.error {
+                return center(error_display(error)).into();
+            }
             // Show empty state if no tracks
             if app.track_list.is_empty() {
                 return empty_state();
-            }
-            // Show error if present
-            if let Some(error) = &app.error {
-                return error_display(error);
             }
 
             // Show tracks grid

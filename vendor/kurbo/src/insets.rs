@@ -3,7 +3,7 @@
 
 //! A description of the distances between the edges of two rectangles.
 
-use core::ops::{Add, Neg, Sub};
+use core::ops::{Add, Div, Mul, Neg, Sub};
 
 use crate::{Rect, Size};
 
@@ -106,7 +106,7 @@ impl Insets {
     pub const ZERO: Insets = Insets::uniform(0.);
 
     /// New uniform insets.
-    #[inline]
+    #[inline(always)]
     pub const fn uniform(d: f64) -> Insets {
         Insets {
             x0: d,
@@ -117,7 +117,7 @@ impl Insets {
     }
 
     /// New insets with uniform values along each axis.
-    #[inline]
+    #[inline(always)]
     pub const fn uniform_xy(x: f64, y: f64) -> Insets {
         Insets {
             x0: x,
@@ -129,7 +129,7 @@ impl Insets {
 
     /// New insets. The ordering of the arguments is "left, top, right, bottom",
     /// assuming a y-down coordinate space.
-    #[inline]
+    #[inline(always)]
     pub const fn new(x0: f64, y0: f64, x1: f64, y1: f64) -> Insets {
         Insets { x0, y0, x1, y1 }
     }
@@ -279,6 +279,32 @@ impl Sub<Rect> for Insets {
     }
 }
 
+impl Mul<f64> for Insets {
+    type Output = Insets;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Self {
+            x0: self.x0 * rhs,
+            y0: self.y0 * rhs,
+            x1: self.x1 * rhs,
+            y1: self.y1 * rhs,
+        }
+    }
+}
+
+impl Div<f64> for Insets {
+    type Output = Insets;
+
+    fn div(self, rhs: f64) -> Self::Output {
+        Self {
+            x0: self.x0 / rhs,
+            y0: self.y0 / rhs,
+            x1: self.x1 / rhs,
+            y1: self.y1 / rhs,
+        }
+    }
+}
+
 impl Sub<Insets> for Rect {
     type Output = Rect;
 
@@ -289,18 +315,21 @@ impl Sub<Insets> for Rect {
 }
 
 impl From<f64> for Insets {
+    #[inline(always)]
     fn from(src: f64) -> Insets {
         Insets::uniform(src)
     }
 }
 
 impl From<(f64, f64)> for Insets {
+    #[inline(always)]
     fn from(src: (f64, f64)) -> Insets {
         Insets::uniform_xy(src.0, src.1)
     }
 }
 
 impl From<(f64, f64, f64, f64)> for Insets {
+    #[inline(always)]
     fn from(src: (f64, f64, f64, f64)) -> Insets {
         Insets::new(src.0, src.1, src.2, src.3)
     }

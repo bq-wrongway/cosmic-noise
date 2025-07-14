@@ -27,7 +27,7 @@ pub struct Circle {
 
 impl Circle {
     /// A new circle from center and radius.
-    #[inline]
+    #[inline(always)]
     pub fn new(center: impl Into<Point>, radius: f64) -> Circle {
         Circle {
             center: center.into(),
@@ -36,6 +36,7 @@ impl Circle {
     }
 
     /// Create a [`CircleSegment`] by cutting out parts of this circle.
+    #[inline(always)]
     pub fn segment(self, inner_radius: f64, start_angle: f64, sweep_angle: f64) -> CircleSegment {
         CircleSegment {
             center: self.center,
@@ -46,13 +47,17 @@ impl Circle {
         }
     }
 
-    /// Is this circle finite?
+    /// Is this circle [finite]?
+    ///
+    /// [finite]: f64::is_finite
     #[inline]
     pub fn is_finite(&self) -> bool {
         self.center.is_finite() && self.radius.is_finite()
     }
 
-    /// Is this circle NaN?
+    /// Is this circle [NaN]?
+    ///
+    /// [NaN]: f64::is_nan
     #[inline]
     pub fn is_nan(&self) -> bool {
         self.center.is_nan() || self.radius.is_nan()
@@ -149,6 +154,7 @@ impl Shape for Circle {
         Rect::new(x - r, y - r, x + r, y + r)
     }
 
+    #[inline(always)]
     fn as_circle(&self) -> Option<Circle> {
         Some(*self)
     }
@@ -190,6 +196,9 @@ impl Iterator for CirclePathIter {
 /// A segment of a circle.
 ///
 /// If `inner_radius > 0`, then the shape will be a doughnut segment.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CircleSegment {
     /// The center.
     pub center: Point,
@@ -205,6 +214,7 @@ pub struct CircleSegment {
 
 impl CircleSegment {
     /// Create a `CircleSegment` out of its constituent parts.
+    #[inline(always)]
     pub fn new(
         center: impl Into<Point>,
         outer_radius: f64,
@@ -221,7 +231,41 @@ impl CircleSegment {
         }
     }
 
-    /// Is this circle segment finite?
+    /// Return an arc representing the outer radius.
+    #[must_use]
+    #[inline(always)]
+    pub fn outer_arc(&self) -> Arc {
+        Arc {
+            center: self.center,
+            radii: Vec2::new(self.outer_radius, self.outer_radius),
+            start_angle: self.start_angle,
+            sweep_angle: self.sweep_angle,
+            x_rotation: 0.0,
+        }
+    }
+
+    /// Return an arc representing the inner radius.
+    ///
+    /// This is [reversed] from the outer arc, so that it is in the
+    /// same direction as the arc that would be drawn (as the path
+    /// elements for this circle segment produce a closed path).
+    ///
+    /// [reversed]: Arc::reversed
+    #[must_use]
+    #[inline]
+    pub fn inner_arc(&self) -> Arc {
+        Arc {
+            center: self.center,
+            radii: Vec2::new(self.inner_radius, self.inner_radius),
+            start_angle: self.start_angle + self.sweep_angle,
+            sweep_angle: -self.sweep_angle,
+            x_rotation: 0.0,
+        }
+    }
+
+    /// Is this circle segment [finite]?
+    ///
+    /// [finite]: f64::is_finite
     #[inline]
     pub fn is_finite(&self) -> bool {
         self.center.is_finite()
@@ -231,7 +275,9 @@ impl CircleSegment {
             && self.sweep_angle.is_finite()
     }
 
-    /// Is this circle segment NaN?
+    /// Is this circle segment [NaN]?
+    ///
+    /// [NaN]: f64::is_nan
     #[inline]
     pub fn is_nan(&self) -> bool {
         self.center.is_nan()
@@ -290,16 +336,7 @@ impl Shape for CircleSegment {
             self.start_angle,
         ))))
         // outer arc
-        .chain(
-            Arc {
-                center: self.center,
-                radii: Vec2::new(self.outer_radius, self.outer_radius),
-                start_angle: self.start_angle,
-                sweep_angle: self.sweep_angle,
-                x_rotation: 0.0,
-            }
-            .append_iter(tolerance),
-        )
+        .chain(self.outer_arc().append_iter(tolerance))
         // second radius
         .chain(iter::once(PathEl::LineTo(point_on_circle(
             self.center,
@@ -307,16 +344,7 @@ impl Shape for CircleSegment {
             self.start_angle + self.sweep_angle,
         ))))
         // inner arc
-        .chain(
-            Arc {
-                center: self.center,
-                radii: Vec2::new(self.inner_radius, self.inner_radius),
-                start_angle: self.start_angle + self.sweep_angle,
-                sweep_angle: -self.sweep_angle,
-                x_rotation: 0.0,
-            }
-            .append_iter(tolerance),
-        )
+        .chain(self.inner_arc().append_iter(tolerance))
     }
 
     #[inline]

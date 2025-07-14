@@ -16,6 +16,7 @@ use iced::Alignment::Center;
 
 use iced::widget::{
     Column, Row, Space, button, center_x, container, horizontal_space, row, slider, text, tooltip,
+    column, 
 };
 use iced::{Alignment, Element, Font, Length, Theme};
 use kira::sound::PlaybackState;
@@ -159,32 +160,43 @@ fn volume_display(track: &NoiseTrack) -> Element<dragwin::Message> {
 
 /// Create an error display component
 pub fn error_display(error: &AppError) -> Element<dragwin::Message> {
-    let error_text = match error {
-        AppError::Audio(AudioError::HandleCreationFailed) => text(fl!("pb-error")),
-        AppError::FileSystem(FileSystemError::DirectoryNotFound) => text(fl!("not-found")),
-        _ => text(error.to_string()),
+    let (icon_path, message): (&str, String) = match error {
+        AppError::FileSystem(FileSystemError::DirectoryNotFound) => (
+            "assets/icons/dir_not_found.svg",
+            fl!("not-found"),
+        ),
+        AppError::FileSystem(FileSystemError::DirectoryReadError) => (
+            "assets/icons/dir_not_allowed.svg",
+            "Could not read audio directory. Check permissions.".to_string(),
+        ),
+        AppError::FileSystem(FileSystemError::InvalidFileFormat) => (
+            "assets/icons/dir_not_found.svg",
+            "Found an invalid or unsupported audio file format.".to_string(),
+        ),
+        AppError::Audio(AudioError::HandleCreationFailed) => (
+            "assets/icons/dir_not_found.svg",
+            fl!("pb-error"),
+        ),
+        _ => (
+            "assets/icons/dir_not_found.svg",
+            error.to_string(),
+        ),
     };
 
-    error_text
-        .style(styles::error_text_style)
-        .size(14.0)
-        .width(Length::Fill)
-        .align_x(iced::alignment::Horizontal::Center)
-        .wrapping(text::Wrapping::Word)
-        .into()
-}
-
-/// Create a loading indicator component
-pub fn loading_indicator<'a>() -> Element<'a, dragwin::Message> {
-    container(
-        text("Loading tracks...")
-            .size(16)
-            .align_x(iced::alignment::Horizontal::Center),
-    )
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .center_x(Length::Fill)
-    .center_y(Length::Fill)
+    column![
+        iced::widget::svg::Svg::from_path(icon_path)
+            .width(200)
+            .height(200)
+            .style(|theme:&Theme,_st| iced::widget::svg::Style {
+                color: Some(theme.extended_palette().danger.base.color), // Red color
+            }),
+        text(message)
+            .style(styles::error_text_style)
+            .size(14.0)
+            .width(Length::Fill)
+            .align_x(iced::alignment::Horizontal::Center)
+            .wrapping(text::Wrapping::Word)
+    ].align_x(iced::alignment::Horizontal::Center)
     .into()
 }
 

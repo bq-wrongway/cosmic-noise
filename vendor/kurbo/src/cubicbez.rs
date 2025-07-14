@@ -12,7 +12,7 @@ use crate::{Line, QuadSpline, Vec2};
 use arrayvec::ArrayVec;
 
 use crate::common::{
-    solve_quadratic, GAUSS_LEGENDRE_COEFFS_16_HALF, GAUSS_LEGENDRE_COEFFS_24_HALF,
+    solve_quadratic, solve_quartic, GAUSS_LEGENDRE_COEFFS_16_HALF, GAUSS_LEGENDRE_COEFFS_24_HALF,
     GAUSS_LEGENDRE_COEFFS_8, GAUSS_LEGENDRE_COEFFS_8_HALF,
 };
 use crate::{
@@ -55,7 +55,7 @@ pub enum CuspType {
 
 impl CubicBez {
     /// Create a new cubic Bézier segment.
-    #[inline]
+    #[inline(always)]
     pub fn new<P: Into<Point>>(p0: P, p1: P, p2: P, p3: P) -> CubicBez {
         CubicBez {
             p0: p0.into(),
@@ -358,6 +358,27 @@ impl CubicBez {
             .collect()
     }
 
+    /// Find points on the curve where the tangent line passes through the
+    /// given point.
+    ///
+    /// Result is array of t values such that the tangent line from the curve
+    /// evaluated at that point goes through the argument point.
+    pub fn tangents_to_point(&self, p: Point) -> ArrayVec<f64, 4> {
+        let (a, b, c, d_orig) = self.parameters();
+        let d = d_orig - p.to_vec2();
+        // coefficients of x(t) \cross x'(t)
+        let c4 = b.cross(a);
+        let c3 = 2.0 * c.cross(a);
+        let c2 = c.cross(b) + 3.0 * d.cross(a);
+        let c1 = 2.0 * d.cross(b);
+        let c0 = d.cross(c);
+        solve_quartic(c0, c1, c2, c3, c4)
+            .iter()
+            .copied()
+            .filter(|t| *t >= 0.0 && *t <= 1.0)
+            .collect()
+    }
+
     /// Preprocess a cubic Bézier to ease numerical robustness.
     ///
     /// If the cubic Bézier segment has zero or near-zero derivatives, perturb
@@ -470,6 +491,7 @@ impl Shape for CubicBez {
         }
     }
 
+    #[inline(always)]
     fn area(&self) -> f64 {
         0.0
     }
@@ -479,6 +501,7 @@ impl Shape for CubicBez {
         self.arclen(accuracy)
     }
 
+    #[inline(always)]
     fn winding(&self, _pt: Point) -> i32 {
         0
     }
@@ -546,12 +569,12 @@ impl ParamCurve for CubicBez {
         )
     }
 
-    #[inline]
+    #[inline(always)]
     fn start(&self) -> Point {
         self.p0
     }
 
-    #[inline]
+    #[inline(always)]
     fn end(&self) -> Point {
         self.p3
     }
@@ -902,7 +925,7 @@ mod tests {
         verify((a * c).nearest(a * Point::new(0.1, 0.001), 1e-6), 0.1);
     }
 
-    // ensure to_quads returns something given colinear points
+    // ensure to_quads returns something given collinear points
     #[test]
     fn degenerate_to_quads() {
         let c = CubicBez::new((0., 9.), (6., 6.), (12., 3.0), (18., 0.0));
@@ -930,7 +953,7 @@ mod tests {
         for i in 0..10 {
             let accuracy = 0.1f64.powi(i);
             let mut worst: f64 = 0.0;
-            for (_count, (t0, t1, q)) in c.to_quads(accuracy).enumerate() {
+            for (t0, t1, q) in c.to_quads(accuracy) {
                 let epsilon = 1e-12;
                 assert!((q.start() - c.eval(t0)).hypot() < epsilon);
                 assert!((q.end() - c.eval(t1)).hypot() < epsilon);
@@ -978,7 +1001,7 @@ mod tests {
         ];
         assert_eq!(spline.points().len(), expected.len());
         for (got, &wanted) in spline.points().iter().zip(expected.iter()) {
-            assert!(got.distance(wanted) < 5.0)
+            assert!(got.distance(wanted) < 5.0);
         }
 
         let spline = c1.approx_spline(5.0);
@@ -996,7 +1019,7 @@ mod tests {
         let spline = spline.unwrap();
         assert_eq!(spline.points().len(), expected.len());
         for (got, &wanted) in spline.points().iter().zip(expected.iter()) {
-            assert!(got.distance(wanted) < 5.0)
+            assert!(got.distance(wanted) < 5.0);
         }
     }
 
@@ -1057,7 +1080,7 @@ mod tests {
                 Point::new(301.0, 560.0),
                 Point::new(260.0, 560.0)
             ]
-        )
+        );
     }
 
     #[test]
@@ -1131,6 +1154,6 @@ mod tests {
                     (274.0, 485.95).into(),
                 ]),
             ]
-        )
+        );
     }
 }

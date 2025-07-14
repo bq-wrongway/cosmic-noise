@@ -14,7 +14,7 @@ use crate::common::FloatFuncs;
 
 /// A 2D point.
 ///
-/// This type represents a point in 2D space. It has the same layout as [`Vec2`][crate::Vec2], but
+/// This type represents a point in 2D space. It has the same layout as [`Vec2`], but
 /// its meaning is different: `Vec2` represents a change in location (for example velocity).
 ///
 /// In general, `kurbo` overloads math operators where it makes sense, for example implementing
@@ -40,13 +40,13 @@ impl Point {
     pub const ORIGIN: Point = Point::new(0., 0.);
 
     /// Create a new `Point` with the provided `x` and `y` coordinates.
-    #[inline]
+    #[inline(always)]
     pub const fn new(x: f64, y: f64) -> Self {
         Point { x, y }
     }
 
     /// Convert this point into a `Vec2`.
-    #[inline]
+    #[inline(always)]
     pub const fn to_vec2(self) -> Vec2 {
         Vec2::new(self.x, self.y)
     }
@@ -64,19 +64,22 @@ impl Point {
     }
 
     /// Euclidean distance.
+    ///
+    /// See [`Vec2::hypot`] for the same operation on [`Vec2`].
     #[inline]
     pub fn distance(self, other: Point) -> f64 {
         (self - other).hypot()
     }
 
     /// Squared Euclidean distance.
+    ///
+    /// See [`Vec2::hypot2`] for the same operation on [`Vec2`].
     #[inline]
     pub fn distance_squared(self, other: Point) -> f64 {
         (self - other).hypot2()
     }
 
-    /// Returns a new `Point`,
-    /// with `x` and `y` rounded to the nearest integer.
+    /// Returns a new `Point`, with `x` and `y` [rounded] to the nearest integer.
     ///
     /// # Examples
     ///
@@ -89,13 +92,15 @@ impl Point {
     /// assert_eq!(b.x, 3.0);
     /// assert_eq!(b.y, -3.0);
     /// ```
+    ///
+    /// [rounded]: f64::round
     #[inline]
     pub fn round(self) -> Point {
         Point::new(self.x.round(), self.y.round())
     }
 
     /// Returns a new `Point`,
-    /// with `x` and `y` rounded up to the nearest integer,
+    /// with `x` and `y` [rounded up] to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -109,13 +114,15 @@ impl Point {
     /// assert_eq!(b.x, 3.0);
     /// assert_eq!(b.y, -3.0);
     /// ```
+    ///
+    /// [rounded up]: f64::ceil
     #[inline]
     pub fn ceil(self) -> Point {
         Point::new(self.x.ceil(), self.y.ceil())
     }
 
     /// Returns a new `Point`,
-    /// with `x` and `y` rounded down to the nearest integer,
+    /// with `x` and `y` [rounded down] to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -129,13 +136,15 @@ impl Point {
     /// assert_eq!(b.x, 3.0);
     /// assert_eq!(b.y, -4.0);
     /// ```
+    ///
+    /// [rounded down]: f64::floor
     #[inline]
     pub fn floor(self) -> Point {
         Point::new(self.x.floor(), self.y.floor())
     }
 
     /// Returns a new `Point`,
-    /// with `x` and `y` rounded away from zero to the nearest integer,
+    /// with `x` and `y` [rounded away] from zero to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -149,13 +158,15 @@ impl Point {
     /// assert_eq!(b.x, 3.0);
     /// assert_eq!(b.y, -4.0);
     /// ```
+    ///
+    /// [rounded away]: FloatExt::expand
     #[inline]
     pub fn expand(self) -> Point {
         Point::new(self.x.expand(), self.y.expand())
     }
 
     /// Returns a new `Point`,
-    /// with `x` and `y` rounded towards zero to the nearest integer,
+    /// with `x` and `y` [rounded towards] zero to the nearest integer,
     /// unless they are already an integer.
     ///
     /// # Examples
@@ -169,33 +180,49 @@ impl Point {
     /// assert_eq!(b.x, 3.0);
     /// assert_eq!(b.y, -3.0);
     /// ```
+    ///
+    /// [rounded towards]: f64::trunc
     #[inline]
     pub fn trunc(self) -> Point {
         Point::new(self.x.trunc(), self.y.trunc())
     }
 
-    /// Is this point finite?
+    /// Is this point [finite]?
+    ///
+    /// [finite]: f64::is_finite
     #[inline]
     pub fn is_finite(self) -> bool {
         self.x.is_finite() && self.y.is_finite()
     }
 
-    /// Is this point NaN?
+    /// Is this point [`NaN`]?
+    ///
+    /// [`NaN`]: f64::is_nan
     #[inline]
     pub fn is_nan(self) -> bool {
         self.x.is_nan() || self.y.is_nan()
     }
 }
 
+impl From<(f32, f32)> for Point {
+    #[inline(always)]
+    fn from(v: (f32, f32)) -> Point {
+        Point {
+            x: v.0 as f64,
+            y: v.1 as f64,
+        }
+    }
+}
+
 impl From<(f64, f64)> for Point {
-    #[inline]
+    #[inline(always)]
     fn from(v: (f64, f64)) -> Point {
         Point { x: v.0, y: v.1 }
     }
 }
 
 impl From<Point> for (f64, f64) {
-    #[inline]
+    #[inline(always)]
     fn from(v: Point) -> (f64, f64) {
         (v.x, v.y)
     }
@@ -213,7 +240,7 @@ impl Add<Vec2> for Point {
 impl AddAssign<Vec2> for Point {
     #[inline]
     fn add_assign(&mut self, other: Vec2) {
-        *self = Point::new(self.x + other.x, self.y + other.y)
+        *self = Point::new(self.x + other.x, self.y + other.y);
     }
 }
 
@@ -229,7 +256,7 @@ impl Sub<Vec2> for Point {
 impl SubAssign<Vec2> for Point {
     #[inline]
     fn sub_assign(&mut self, other: Vec2) {
-        *self = Point::new(self.x - other.x, self.y - other.y)
+        *self = Point::new(self.x - other.x, self.y - other.y);
     }
 }
 
@@ -245,7 +272,7 @@ impl Add<(f64, f64)> for Point {
 impl AddAssign<(f64, f64)> for Point {
     #[inline]
     fn add_assign(&mut self, (x, y): (f64, f64)) {
-        *self = Point::new(self.x + x, self.y + y)
+        *self = Point::new(self.x + x, self.y + y);
     }
 }
 
@@ -261,7 +288,7 @@ impl Sub<(f64, f64)> for Point {
 impl SubAssign<(f64, f64)> for Point {
     #[inline]
     fn sub_assign(&mut self, (x, y): (f64, f64)) {
-        *self = Point::new(self.x - x, self.y - y)
+        *self = Point::new(self.x - x, self.y - y);
     }
 }
 
@@ -287,6 +314,22 @@ impl fmt::Display for Point {
         write!(formatter, ", ")?;
         fmt::Display::fmt(&self.y, formatter)?;
         write!(formatter, ")")
+    }
+}
+
+#[cfg(feature = "mint")]
+impl From<Point> for mint::Point2<f64> {
+    #[inline(always)]
+    fn from(p: Point) -> mint::Point2<f64> {
+        mint::Point2 { x: p.x, y: p.y }
+    }
+}
+
+#[cfg(feature = "mint")]
+impl From<mint::Point2<f64>> for Point {
+    #[inline(always)]
+    fn from(p: mint::Point2<f64>) -> Point {
+        Point { x: p.x, y: p.y }
     }
 }
 
@@ -324,21 +367,5 @@ mod tests {
 
         let p = Point::new(0.12345, 9.87654);
         assert_eq!(format!("{p:.2}"), "(0.12, 9.88)");
-    }
-}
-
-#[cfg(feature = "mint")]
-impl From<Point> for mint::Point2<f64> {
-    #[inline]
-    fn from(p: Point) -> mint::Point2<f64> {
-        mint::Point2 { x: p.x, y: p.y }
-    }
-}
-
-#[cfg(feature = "mint")]
-impl From<mint::Point2<f64>> for Point {
-    #[inline]
-    fn from(p: mint::Point2<f64>) -> Point {
-        Point { x: p.x, y: p.y }
     }
 }
