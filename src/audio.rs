@@ -24,12 +24,12 @@ pub enum AudioCommand {
 }
 
 impl AudioSystem {
-    /// Create a new audio system with default settings
+    // Create a new audio system with default settings
     pub fn new() -> Result<Self, AppError> {
         Self::with_settings(AudioSettings::default())
     }
 
-    /// Create a new audio system with custom settings
+    // Create a new audio system with custom settings
     pub fn with_settings(settings: AudioSettings) -> Result<Self, AppError> {
         let manager_settings = AudioManagerSettings {
             // Configure based on our settings
@@ -47,7 +47,7 @@ impl AudioSystem {
         })
     }
 
-    /// Get the state of a specific track
+    // Get the state of a specific track
     pub fn track_state(&self, track_id: usize) -> PlaybackState {
         self.playing_handles
             .get(&track_id)
@@ -55,17 +55,17 @@ impl AudioSystem {
             .unwrap_or(PlaybackState::Stopped)
     }
 
-    /// Get the current master volume
+    // Get the current master volume
     pub fn master_volume(&self) -> f32 {
         self.default_settings.master_volume
     }
 
-    /// Set the master volume
+    // Set the master volume
     pub fn set_master_volume(&mut self, volume: f32) {
         self.default_settings.master_volume = volume;
     }
 
-    /// Process an audio command
+    // Process an audio command
     pub fn process_command(
         &mut self,
         command: AudioCommand,
@@ -115,12 +115,8 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Play a track by index
-    fn play_track(
-        &mut self,
-        track_id: usize,
-        tracks: &mut [NoiseTrack],
-    ) -> Result<(), AppError> {
+    // Play a track by index
+    fn play_track(&mut self, track_id: usize, tracks: &mut [NoiseTrack]) -> Result<(), AppError> {
         if track_id >= tracks.len() {
             return Err(AppError::Audio(AudioError::PlaybackError(
                 "Track index out of bounds".to_string(),
@@ -156,7 +152,7 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Start a new track from the beginning
+    // Start a new track from the beginning
     fn start_new_track(
         &mut self,
         track_id: usize,
@@ -188,7 +184,7 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Load and play a sound file
+    // Load and play a sound file
     fn load_and_play_sound(
         &mut self,
         path: &Path,
@@ -205,19 +201,15 @@ impl AudioSystem {
         let handle = manager
             .play(sound_data.with_settings(settings))
             .map_err(|e| {
-                log::error!("Failed to play sound: {}", e);
+                log::error!("Failed to play sound: {e}");
                 AppError::Audio(AudioError::HandleCreationFailed)
             })?;
 
         Ok(handle)
     }
 
-    /// Pause a track by index
-    fn pause_track(
-        &mut self,
-        track_id: usize,
-        tracks: &mut [NoiseTrack],
-    ) -> Result<(), AppError> {
+    // Pause a track by index
+    fn pause_track(&mut self, track_id: usize, tracks: &mut [NoiseTrack]) -> Result<(), AppError> {
         let tween = self.create_tween();
         if let Some(handle) = self.playing_handles.get_mut(&track_id) {
             if matches!(handle.state(), PlaybackState::Playing) {
@@ -231,12 +223,8 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Resume a track by index
-    fn resume_track(
-        &mut self,
-        track_id: usize,
-        tracks: &mut [NoiseTrack],
-    ) -> Result<(), AppError> {
+    // Resume a track by index
+    fn resume_track(&mut self, track_id: usize, tracks: &mut [NoiseTrack]) -> Result<(), AppError> {
         let tween = self.create_tween();
         if let Some(handle) = self.playing_handles.get_mut(&track_id) {
             if matches!(handle.state(), PlaybackState::Paused) {
@@ -250,12 +238,8 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Stop a track by index
-    fn stop_track(
-        &mut self,
-        track_id: usize,
-        tracks: &mut [NoiseTrack],
-    ) -> Result<(), AppError> {
+    // Stop a track by index
+    fn stop_track(&mut self, track_id: usize, tracks: &mut [NoiseTrack]) -> Result<(), AppError> {
         let tween = self.create_tween();
         if let Some(mut handle) = self.playing_handles.remove(&track_id) {
             handle.stop(tween);
@@ -267,7 +251,7 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Set volume for a specific track
+    // Set volume for a specific track
     fn set_track_volume(
         &mut self,
         track_id: usize,
@@ -295,7 +279,7 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Stop all playing tracks
+    // Stop all playing tracks
     fn stop_all_tracks(&mut self, tracks: &mut [NoiseTrack]) -> Result<(), AppError> {
         let track_ids: Vec<usize> = self.playing_handles.keys().copied().collect();
 
@@ -308,7 +292,7 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Pause all playing tracks
+    // Pause all playing tracks
     fn pause_all_tracks(&mut self, tracks: &mut [NoiseTrack]) -> Result<(), AppError> {
         let track_ids: Vec<usize> = self.playing_handles.keys().copied().collect();
 
@@ -323,11 +307,8 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Resume all paused tracks
-    fn resume_all_tracks(
-        &mut self,
-        tracks: &mut [NoiseTrack],
-    ) -> Result<(), AppError> {
+    // Resume all paused tracks
+    fn resume_all_tracks(&mut self, tracks: &mut [NoiseTrack]) -> Result<(), AppError> {
         let track_ids: Vec<usize> = self.playing_handles.keys().copied().collect();
 
         for track_id in track_ids {
@@ -341,7 +322,7 @@ impl AudioSystem {
         Ok(())
     }
 
-    /// Update the global playback state based on individual track states
+    // Update the global playback state based on individual track states
     fn update_global_state(&mut self) {
         if self.playing_handles.is_empty() {
             self.global_state = PlaybackState::Stopped;
@@ -368,7 +349,7 @@ impl AudioSystem {
         };
     }
 
-    /// Create a tween for smooth audio transitions
+    // Create a tween for smooth audio transitions
     fn create_tween(&self) -> Tween {
         Tween {
             duration: self.default_settings.fade_duration,
@@ -400,8 +381,8 @@ impl std::fmt::Debug for AudioSystem {
     }
 }
 
-/// Convert decibel value to user-friendly percentage (0-100)
-/// -60 dB = 0%, 0 dB = 100%
+// Convert decibel to % (0-100)
+// -60 dB = 0%, 0 dB = 100%
 pub fn db_to_percentage(db: f32) -> f32 {
     // Clamp to safe range
     let clamped_db = db.clamp(-60.0, 0.0);
@@ -409,8 +390,8 @@ pub fn db_to_percentage(db: f32) -> f32 {
     ((clamped_db + 60.0) / 60.0) * 100.0
 }
 
-/// Convert user-friendly percentage (0-100) to decibel value
-/// 0% = -60 dB, 100% = 0 dB
+// converting % to decibels
+// 0% = -60 dB, 100% = 0 dB
 pub fn percentage_to_db(percentage: f32) -> f32 {
     // Clamp to 0-100 range
     let clamped_percentage = percentage.clamp(0.0, 100.0);
@@ -449,17 +430,6 @@ mod tests {
     }
 
     #[test]
-    fn test_audio_stats() {
-        let audio_system = AudioSystem::default();
-        // The original code had AudioStats, but it's removed.
-        // This test will now fail because get_stats is removed.
-        // assert_eq!(stats.total_tracks, 0);
-        // assert_eq!(stats.playing_tracks, 0);
-        // assert_eq!(stats.paused_tracks, 0);
-        // assert_eq!(stats.global_state, PlaybackState::Stopped);
-    }
-
-    #[test]
     fn test_volume_conversion() {
         // Test dB to percentage conversion
         assert_eq!(db_to_percentage(-60.0), 0.0);
@@ -477,14 +447,5 @@ mod tests {
         assert_eq!(db_to_percentage(20.0), 100.0); // Should clamp to 0
         assert_eq!(percentage_to_db(-10.0), -60.0); // Should clamp to 0
         assert_eq!(percentage_to_db(150.0), 0.0); // Should clamp to 100
-    }
-
-    #[test]
-    fn test_volume_labels() {
-        assert_eq!(get_volume_label(-60.0), "Muted");
-        assert_eq!(get_volume_label(-50.0), "Very Quiet");
-        assert_eq!(get_volume_label(-30.0), "Normal"); // -30 dB = 50%, which is >= 50%
-        assert_eq!(get_volume_label(-15.0), "Normal");
-        assert_eq!(get_volume_label(-5.0), "Loud");
     }
 }

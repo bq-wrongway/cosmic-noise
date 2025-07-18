@@ -1,5 +1,3 @@
-//! Show a "rising bars" loading indicator (bars animate in a sine wave pattern, centered vertically).
-
 use iced::Length::Fill;
 use iced::advanced::layout;
 use iced::advanced::renderer::{self, Quad};
@@ -79,7 +77,7 @@ where
         self
     }
 
-    /// Set whether the animation is running
+    // Set whether the animation is running
     pub fn running(mut self, running: bool) -> Self {
         self.running = running;
         self
@@ -259,7 +257,7 @@ pub struct Style {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Appearance {
-    /// The bar [`Color`] of the progress indicator.
+    // The bar [`Color`] of the progress indicator.
     pub bar_color: Color,
     pub background_color: Color,
 }
@@ -273,9 +271,9 @@ impl Default for Appearance {
     }
 }
 
-/// A set of rules that dictate the style of an indicator.
+// A set of rules that dictate the style of an indicator.
 pub trait StyleSheet {
-    /// The supported style of the [`StyleSheet`].
+    // The supported style of the [`StyleSheet`].
     type Style: Default;
     fn appearance(&self, style: &Self::Style) -> Appearance;
 }

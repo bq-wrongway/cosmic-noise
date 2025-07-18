@@ -1,4 +1,3 @@
-
 use crate::audio::{AudioCommand, AudioSystem};
 use crate::config::ConfigManager;
 use crate::errors::AppError;
@@ -6,19 +5,18 @@ use crate::models::{AppTheme, NoiseTrack, View};
 
 use crate::utils::files;
 use iced::Task;
-use log::{info};
+use log::info;
 
-/// Main application state
 pub struct CosmicNoise {
-    /// Audio system for managing playback
+    // Audio system for managing playback
     pub audio_system: AudioSystem,
-    /// List of available audio tracks
+    // List of available audio tracks
     pub track_list: Vec<NoiseTrack>,
-    /// Current error state, if any
+    // Current error state, if any
     pub error: Option<AppError>,
-    /// Current view state
+    // Current view state
     pub current_view: View,
-    /// Current theme
+    // Current theme
     pub current_theme: AppTheme,
 }
 
@@ -38,7 +36,7 @@ impl CosmicNoise {
         //master volume (amplifier )
         let master_volume = ConfigManager::load_master_volume();
         audio_system.set_master_volume(master_volume);
-        info!("Loaded master volume from configuration: {} dB", master_volume);
+        info!("Loaded master volume from configuration: {master_volume} dB");
 
         let app = CosmicNoise {
             audio_system,
@@ -106,7 +104,6 @@ impl Default for CosmicNoise {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
 
     #[test]
     fn test_app_creation() {

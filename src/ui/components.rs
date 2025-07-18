@@ -1,7 +1,3 @@
-//! Reusable UI components for the Cosmic Noise application.
-//!
-//! This module contains all the reusable UI components that make up the application's
-//! interface. Each component is self-contained and can be easily tested and reused.
 
 use crate::audio::{db_to_percentage, percentage_to_db};
 use crate::errors::{AppError, AudioError, FileSystemError};
@@ -15,14 +11,14 @@ use crate::audio::AudioCommand;
 use iced::Alignment::Center;
 
 use iced::widget::{
-    Column, Row, Space, button, center_x, container, horizontal_space, row, slider, text, tooltip,
+    Column, Row,  button, center_x, container, horizontal_space, row, slider, text, tooltip,
     column, 
 };
 use iced::{Alignment, Element, Font, Length, Theme};
 use kira::sound::PlaybackState;
 use std::time::Duration;
 
-/// Create a track card component
+// Create a track card component
 pub fn track_card(track: &NoiseTrack, index: usize) -> Element<dragwin::Message> {
     let card_content = Column::new()
         .push(track_header(track))
@@ -38,7 +34,7 @@ pub fn track_card(track: &NoiseTrack, index: usize) -> Element<dragwin::Message>
         .into()
 }
 
-/// Create the header section of a track card (icon + name)
+// Create the header section of a track card (icon + name)
 fn track_header(track: &NoiseTrack) -> Row<dragwin::Message> {
     Row::new()
         .push(track_icon(track))
@@ -46,7 +42,7 @@ fn track_header(track: &NoiseTrack) -> Row<dragwin::Message> {
         .align_y(Alignment::Center)
 }
 
-/// Create the appropriate icon based on track state
+// Create the appropriate icon based on track state
 fn track_icon(track: &NoiseTrack) -> Element<dragwin::Message> {
     use iced::widget::container;
     let sine_loading = SineWaveLoading::new()
@@ -65,7 +61,7 @@ fn track_icon(track: &NoiseTrack) -> Element<dragwin::Message> {
     .into()
 }
 
-/// Create a play icon
+// Create a play icon
 fn play_icon<'a, Message>() -> Element<'a, Message> {
     icon('\u{E805}')
 }
@@ -91,7 +87,7 @@ fn back_icon<'a, Message>() -> Element<'a, Message> {
     icon('\u{E801}')
 }
 
-/// Create an icon with the dragwin font
+// Create an icon with the dragwin font
 fn icon<'a, Message>(codepoint: char) -> Element<'a, Message> {
     const ICON_FONT: Font = Font::with_name("dragwin");
 
@@ -123,7 +119,7 @@ fn action<'a, Message: Clone + 'a>(
         action.style(button::secondary).into()
     }
 }
-/// Create a track name display
+// Create a track name display
 fn track_name(name: &str) -> Element<dragwin::Message> {
     text(uppercase_first(name))
         .size(14)
@@ -135,7 +131,7 @@ fn track_name(name: &str) -> Element<dragwin::Message> {
         .into()
 }
 
-/// Create a volume slider component
+// Create a volume slider component
 pub fn volume_slider(track: &NoiseTrack, index: usize) -> Element<dragwin::Message> {
     slider(
         0.0..=100.0,
@@ -149,7 +145,7 @@ pub fn volume_slider(track: &NoiseTrack, index: usize) -> Element<dragwin::Messa
     .into()
 }
 
-/// Create a volume percentage display
+// Create a volume percentage display
 fn volume_display(track: &NoiseTrack) -> Element<dragwin::Message> {
     text(format!("{}%", db_to_percentage(track.volume_level) as u8))
         .size(10)
@@ -158,7 +154,7 @@ fn volume_display(track: &NoiseTrack) -> Element<dragwin::Message> {
         .into()
 }
 
-/// Create an error display component
+// Create an error display component
 pub fn error_display(error: &AppError) -> Element<dragwin::Message> {
     let (icon_path, message): (&str, String) = match error {
         AppError::FileSystem(FileSystemError::DirectoryNotFound) => (
@@ -200,7 +196,7 @@ pub fn error_display(error: &AppError) -> Element<dragwin::Message> {
     .into()
 }
 
-/// Create a toolbar component
+// Create a toolbar component
 pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
     row![
         //in this case tool bar is my button
@@ -259,12 +255,8 @@ pub fn toolbar<'a>(master_volume: f32) -> Element<'a, dragwin::Message> {
     //need to add button
 }
 
-/// Create a spacer component
-pub fn spacer<'a>(width: u16, height: u16) -> Element<'a, dragwin::Message> {
-    Space::new(width as f32, height as f32).into()
-}
 
-/// Create an empty state component when no tracks are found
+// Create an empty state component when no tracks are found
 pub fn empty_state<'a>() -> Element<'a, dragwin::Message> {
     container(
         Column::new()
@@ -308,7 +300,7 @@ pub fn empty_state<'a>() -> Element<'a, dragwin::Message> {
     .into()
 }
 
-/// Helper function to capitalize the first letter of a string
+// Helper function to capitalize the first letter of a string
 fn uppercase_first(data: &str) -> String {
     let mut result = String::new();
     let mut first = true;
@@ -323,7 +315,7 @@ fn uppercase_first(data: &str) -> String {
     result
 }
 
-/// Create settings view with theme selection
+// Create settings view with theme selection
 pub fn settings_view<'a>(current_theme: &crate::models::AppTheme) -> Element<'a, dragwin::Message> {
     use crate::models::AppTheme;
     use iced::widget::{column, pick_list, text};

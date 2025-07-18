@@ -1,31 +1,25 @@
-//! Data models and structures for the Cosmic Noise application.
-//!
-//! This module contains all the core data structures, domain models, and types
-//! used throughout the application. It serves as a single source of truth for
-//! data definitions and provides a clean separation between data and business logic.
-
 use kira::sound::PlaybackState;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::Duration;
 
-/// Core domain model representing an audio track
+// Core domain model representing an audio track
 #[derive(Debug, Clone, PartialEq)]
 pub struct NoiseTrack {
-    /// Display name of the track (usually filename without extension)
+    // Display name of the track (usually filename without extension)
     pub name: String,
-    /// Full file path to the audio file
+    // Full file path to the audio file
     pub path: PathBuf,
-    /// Current volume level in decibels (-60.0 to 0.0)
+    // Current volume level in decibels (-60.0 to 0.0)
     pub volume_level: f32,
-    /// Current playback state
+    // Current playback state
     pub state: PlaybackState,
-    /// Track metadata (optional)
+    // Track metadata (optional)
     pub metadata: Option<TrackMetadata>,
 }
 
 impl NoiseTrack {
-    /// Create a new noise track with default settings
+    // Create a new noise track with default settings
     pub fn new(name: String, path: PathBuf) -> Self {
         Self {
             name,
@@ -37,55 +31,41 @@ impl NoiseTrack {
     }
 }
 
-/// Optional metadata for audio tracks
-#[derive(Debug, Clone, PartialEq)]
+// Optional metadata for audio tracks
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct TrackMetadata {
-    /// Track duration in seconds (if known)
+    // Track duration in seconds (if known)
     pub duration: Option<f64>,
-    /// Audio format (mp3, ogg, flac, wav)
+    // Audio format (mp3, ogg, flac, wav)
     pub format: Option<String>,
-    /// Sample rate in Hz
+    // Sample rate in Hz
     pub sample_rate: Option<u32>,
-    /// Number of audio channels
+    // Number of audio channels
     pub channels: Option<u16>,
-    /// Bitrate in kbps (for compressed formats)
+    // Bitrate in kbps (for compressed formats)
     pub bitrate: Option<u32>,
-    /// File size in bytes
+    // File size in bytes
     pub file_size: Option<u64>,
-    /// Last modified timestamp
+    // Last modified timestamp
     pub last_modified: Option<std::time::SystemTime>,
 }
 
-impl Default for TrackMetadata {
-    fn default() -> Self {
-        Self {
-            duration: None,
-            format: None,
-            sample_rate: None,
-            channels: None,
-            bitrate: None,
-            file_size: None,
-            last_modified: None,
-        }
-    }
-}
-
-/// Audio system configuration settings
+// Audio system configuration settings
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AudioSettings {
-    /// Default volume level for new tracks (-60.0 to 0.0 dB)
+    // Default volume level for new tracks (-60.0 to 0.0 dB)
     pub default_volume: f32,
-    /// Default fade duration for volume changes
+    // Default fade duration for volume changes
     pub fade_duration: Duration,
-    /// Loop settings for ambient sounds
+    // Loop settings for ambient sounds
     pub loop_region: Option<std::ops::RangeFrom<f64>>,
-    /// Audio buffer size preference
+    // Audio buffer size preference
     pub buffer_size: Option<u32>,
-    /// Maximum number of simultaneous tracks
+    // Maximum number of simultaneous tracks
     pub max_concurrent_tracks: usize,
-    /// Enable audio normalization
+    // Enable audio normalization
     pub normalize_audio: bool,
-    /// Master volume level
+    // Master volume level
     pub master_volume: f32,
 }
 
@@ -103,22 +83,22 @@ impl Default for AudioSettings {
     }
 }
 
-/// Audio system statistics and monitoring data
+// Audio system statistics and monitoring data
 #[derive(Debug, Clone, PartialEq)]
 pub struct AudioStats {
-    /// Total number of tracks in system
+    // Total number of tracks in system
     pub total_tracks: usize,
-    /// Number of currently playing tracks
+    // Number of currently playing tracks
     pub playing_tracks: usize,
-    /// Number of currently paused tracks
+    // Number of currently paused tracks
     pub paused_tracks: usize,
-    /// Global playback state
+    // Global playback state
     pub global_state: PlaybackState,
-    /// Whether audio system is initialized
+    // Whether audio system is initialized
     pub is_initialized: bool,
-    /// Audio system latency in milliseconds
+    // Audio system latency in milliseconds
     pub latency_ms: Option<f32>,
-    /// CPU usage percentage for audio processing
+    // CPU usage percentage for audio processing
     pub cpu_usage: Option<f32>,
 }
 
@@ -136,24 +116,24 @@ impl Default for AudioStats {
     }
 }
 
-/// Application-wide statistics and monitoring data
+// Application-wide statistics and monitoring data
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppStats {
-    /// Total number of tracks discovered
+    // Total number of tracks discovered
     pub total_tracks: usize,
-    /// Number of successfully loaded tracks
+    // Number of successfully loaded tracks
     pub loaded_tracks: usize,
-    /// Number of currently playing tracks
+    // Number of currently playing tracks
     pub playing_tracks: usize,
-    /// Number of currently paused tracks
+    // Number of currently paused tracks
     pub paused_tracks: usize,
-    /// Whether there's an active error
+    // Whether there's an active error
     pub has_error: bool,
-    /// Whether audio system is initialized
+    // Whether audio system is initialized
     pub audio_initialized: bool,
-    /// Application uptime
+    // Application uptime
     pub uptime: Duration,
-    /// Memory usage in MB
+    // Memory usage in MB
     pub memory_usage_mb: Option<f32>,
 }
 
@@ -172,19 +152,19 @@ impl Default for AppStats {
     }
 }
 
-/// Application configuration settings
-/// Application configuration that persists between sessions
+// Application configuration settings
+// Application configuration that persists between sessions
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
-    /// Current selected theme
+    // Current selected theme
     pub theme: AppTheme,
-    /// Audio settings
+    // Audio settings
     pub audio: AudioSettings,
-    /// UI settings
+    // UI settings
     pub ui: UiSettings,
-    /// File settings
+    // File settings
     pub files: FileSettings,
-    /// Window settings
+    // Window settings
     pub window: WindowSettings,
 }
 
@@ -200,18 +180,18 @@ impl Default for AppConfig {
     }
 }
 
-/// UI-related settings and preferences
+// UI-related settings and preferences
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UiSettings {
-    /// UI scale factor
+    // UI scale factor
     pub scale_factor: f32,
-    /// Show volume as percentage instead of dB
+    // Show volume as percentage instead of dB
     pub show_volume_percentage: bool,
-    /// Enable animations
+    // Enable animations
     pub enable_animations: bool,
-    /// Grid layout settings
+    // Grid layout settings
     pub grid_columns: Option<usize>,
-    /// Show track metadata
+    // Show track metadata
     pub show_metadata: bool,
 }
 
@@ -221,13 +201,13 @@ impl Default for UiSettings {
             scale_factor: 1.0,
             show_volume_percentage: true,
             enable_animations: true,
-            grid_columns: None, // Auto-calculate
+            grid_columns: None,
             show_metadata: false,
         }
     }
 }
 
-/// Available application themes
+// Available application themes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AppTheme {
     GruvboxLight,
@@ -239,7 +219,7 @@ pub enum AppTheme {
 }
 
 impl AppTheme {
-    /// Get all available themes
+    // Get all available themes
     pub fn all() -> &'static [AppTheme] {
         &[
             AppTheme::GruvboxLight,
@@ -250,7 +230,7 @@ impl AppTheme {
         ]
     }
 
-    /// Get theme display name
+    // Get theme display name
     pub fn display_name(&self) -> &'static str {
         match self {
             AppTheme::GruvboxLight => "Gruvbox Light",
@@ -268,28 +248,28 @@ impl std::fmt::Display for AppTheme {
     }
 }
 
-/// Application view states
+// Application view states
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum View {
-    /// Main player view with track grid
+    // Main player view with track grid
     #[default]
     Player,
-    /// Settings view with configuration options
+    // Settings view with configuration options
     Settings,
 }
 
-/// File system related settings
+// File system related settings
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileSettings {
-    /// Custom directories to scan for audio files
+    // Custom directories to scan for audio files
     pub custom_directories: Vec<PathBuf>,
-    /// Watch directories for changes
+    // Watch directories for changes
     pub watch_directories: bool,
-    /// Supported file extensions
+    // Supported file extensions
     pub supported_extensions: Vec<String>,
-    /// Scan subdirectories recursively
+    // Scan subdirectories recursively
     pub recursive_scan: bool,
-    /// Maximum directory scanning depth
+    // Maximum directory scanning depth
     pub max_scan_depth: usize,
 }
 
@@ -305,20 +285,20 @@ impl Default for FileSettings {
     }
 }
 
-/// Window-related settings
+// Window-related settings
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WindowSettings {
-    /// Initial window width
+    // Initial window width
     pub width: f32,
-    /// Initial window height
+    // Initial window height
     pub height: f32,
-    /// Window is resizable
+    // Window is resizable
     pub resizable: bool,
-    /// Window has decorations
+    // Window has decorations
     pub decorations: bool,
-    /// Window is transparent
+    // Window is transparent
     pub transparent: bool,
-    /// Always on top
+    // Always on top
     pub always_on_top: bool,
 }
 
@@ -336,15 +316,15 @@ impl Default for WindowSettings {
 }
 
 // Constants used throughout the application
-/// Default volume in decibels
+// Default volume in decibels
 pub const DEFAULT_VOLUME_DB: f32 = -30.0;
 #[allow(dead_code)]
 pub const MAX_VOLUME_DB: f32 = 0.0;
 #[allow(dead_code)]
 pub const MIN_VOLUME_DB: f32 = -60.0;
-/// Supported audio file extensions
+// Supported audio file extensions
 pub const SUPPORTED_EXTENSIONS: &[&str] = &["mp3", "ogg", "flac", "wav"];
-/// Default sound directory name
+// Default sound directory name
 pub const SOUND_DIRECTORY: &str = "cosmic-noise/sounds";
 
 #[cfg(test)]
@@ -357,52 +337,6 @@ mod tests {
 
         assert_eq!(track.name, "test");
         assert_eq!(track.volume_level, DEFAULT_VOLUME_DB);
-        assert!(track.is_stopped());
-        assert!(!track.is_playing());
-    }
-
-    #[test]
-    fn test_noise_track_volume() {
-        let mut track = NoiseTrack::new("test".to_string(), PathBuf::from("/test/path.mp3"));
-
-        track.set_volume_percentage(50.0);
-        assert_eq!(track.volume_percentage(), 50.0);
-
-        // Test clamping
-        let track_high = NoiseTrack::with_volume(
-            "test".to_string(),
-            PathBuf::from("/test/path.mp3"),
-            100.0, // Too high
-        );
-        assert_eq!(track_high.volume_level, DEFAULT_VOLUME_DB);
-    }
-
-    #[test]
-    fn test_app_stats() {
-        let mut stats = AppStats::default();
-        assert!(!stats.is_healthy()); // No audio initialized
-
-        stats.audio_initialized = true;
-        stats.loaded_tracks = 5;
-        assert!(stats.is_healthy());
-
-        assert_eq!(stats.status_message(), "5 tracks ready");
-
-        stats.playing_tracks = 2;
-        assert_eq!(stats.status_message(), "Playing 2 tracks");
-    }
-
-    #[test]
-    fn test_audio_stats() {
-        let stats = AudioStats {
-            playing_tracks: 2,
-            paused_tracks: 1,
-            is_initialized: true,
-            ..Default::default()
-        };
-
-        assert!(stats.has_active_tracks());
-        assert!(stats.is_healthy());
     }
 
     #[test]

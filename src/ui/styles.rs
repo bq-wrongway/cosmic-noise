@@ -1,14 +1,9 @@
-//! UI styling functions and theme definitions for the Cosmic Noise application.
-//!
-//! This module contains all styling functions and theme-related utilities
-//! used throughout the application's user interface.
-
 use iced::widget::{button, slider, text};
 use iced::{Background, Border, Color, Theme};
 
 use crate::utils::sine_wave_loading;
 
-/// Style function for track card buttons
+// Style function for track card buttons
 pub fn card_button_style(theme: &Theme, status: button::Status) -> button::Style {
     let palette = theme.extended_palette();
     let bg_color = palette.background.strongest.color;
@@ -82,7 +77,7 @@ pub fn loader_primary_style(theme: &Theme) -> sine_wave_loading::Style {
     }
 }
 
-/// Style function for volume sliders
+// Style function for volume sliders
 pub fn volume_slider_style(theme: &Theme, _status: slider::Status) -> slider::Style {
     let palette = theme.extended_palette();
 
@@ -108,14 +103,14 @@ pub fn volume_slider_style(theme: &Theme, _status: slider::Status) -> slider::St
     }
 }
 
-/// Style function for error text
+// Style function for error text
 pub fn error_text_style(theme: &Theme) -> text::Style {
     text::Style {
         color: Some(theme.extended_palette().danger.strong.color),
     }
 }
 
-/// Style function for secondary text
+// Style function for secondary text
 pub fn secondary_text_style(theme: &Theme) -> text::Style {
     text::Style {
         color: Some(theme.extended_palette().background.base.text),

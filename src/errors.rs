@@ -1,70 +1,65 @@
-//! Error handling for the Cosmic Noise application.
-//!
-//! This module provides comprehensive error types and handling for all application components
-//! including file system operations, audio playback, and UI interactions.
-
 use std::fmt;
 
-/// Main error type for the Cosmic Noise application.
+// Main error type for the Cosmic Noise application.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppError {
-    /// File system related errors
+    // File system related errors
     FileSystem(FileSystemError),
-    /// Audio playback related errors
+    // Audio playback related errors
     Audio(AudioError),
-    /// Configuration related errors
+    // Configuration related errors
     Config(ConfigError),
 }
 
-/// File system related errors
+// File system related errors
 #[derive(Debug, Clone, PartialEq)]
 pub enum FileSystemError {
-    /// Could not find sound directory
+    // Could not find sound directory
     DirectoryNotFound,
-    /// Could not read directory contents
+    // Could not read directory contents
     DirectoryReadError,
-    /// Invalid file format
+    // Invalid file format
     InvalidFileFormat,
-    /// File access permission denied
+    // File access permission denied
     PermissionDenied,
-    /// Generic IO error
+    // Generic IO error
     IOError(String),
 }
 
-/// Audio playback related errors
+// Audio playback related errors (some of this is basically a placeholder for now)
 #[derive(Debug, Clone, PartialEq)]
 pub enum AudioError {
-    /// Failed to initialize audio manager
+    // Failed to initialize audio manager
     InitializationFailed,
-    /// Failed to create audio handle
+    // Failed to create audio handle
     HandleCreationFailed,
-    /// Audio file has no default track
+    // Audio file has no default track
     NoDefaultTrack,
-    /// Unknown or unsupported sample rate
+    // Unknown or unsupported sample rate
     UnknownSampleRate,
-    /// Unknown duration in audio file
+    // Unknown duration in audio file
     UnknownDuration,
-    /// Unsupported channel configuration
+    // Unsupported channel configuration
     UnsupportedChannelConfiguration,
-    /// Symphonia decoder error
+    // Symphonia decoder error
     DecoderError(String),
-    /// Playback error during runtime
+    // Playback error during runtime
     PlaybackError(String),
 }
 
-/// Configuration related errors
+// Configuration related errors
 #[derive(Debug, Clone, PartialEq)]
 pub enum ConfigError {
-    /// Failed to save configuration
+    // Failed to save configuration
     SaveFailed,
 }
 
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AppError::FileSystem(e) => write!(f, "File system error: {}", e),
-            AppError::Audio(e) => write!(f, "Audio error: {}", e),
-            AppError::Config(e) => write!(f, "Configuration error: {}", e),
+            AppError::FileSystem(e) => write!(f, "File system error: {e}"),
+            AppError::Audio(e) => write!(f, "Audio error: {e}"),
+            AppError::Config(e) => write!(f, "Configuration error: {e}"),
         }
     }
 }
@@ -88,7 +83,7 @@ impl fmt::Display for FileSystemError {
                 write!(f, "Permission denied accessing audio files")
             }
             FileSystemError::IOError(msg) => {
-                write!(f, "IO error: {}", msg)
+                write!(f, "IO error: {msg}")
             }
         }
     }
@@ -116,10 +111,10 @@ impl fmt::Display for AudioError {
                 write!(f, "Audio file has unsupported channel configuration")
             }
             AudioError::DecoderError(msg) => {
-                write!(f, "Audio decoder error: {}", msg)
+                write!(f, "Audio decoder error: {msg}")
             }
             AudioError::PlaybackError(msg) => {
-                write!(f, "Playback error: {}", msg)
+                write!(f, "Playback error: {msg}")
             }
         }
     }
@@ -140,7 +135,7 @@ impl std::error::Error for FileSystemError {}
 impl std::error::Error for AudioError {}
 impl std::error::Error for ConfigError {}
 
-/// Helper functions for error conversion
+// Helper functions for error conversion
 impl From<FileSystemError> for AppError {
     fn from(error: FileSystemError) -> Self {
         AppError::FileSystem(error)
@@ -159,7 +154,7 @@ impl From<ConfigError> for AppError {
     }
 }
 
-/// Convert from Kira's FromFileError to our AudioError
+// Convert from Kira's FromFileError to our AudioError
 impl From<kira::sound::FromFileError> for AudioError {
     fn from(error: kira::sound::FromFileError) -> Self {
         match error {
@@ -177,7 +172,7 @@ impl From<kira::sound::FromFileError> for AudioError {
     }
 }
 
-/// Convert from std::io::Error to FileSystemError
+// Convert from std::io::Error to FileSystemError
 impl From<std::io::Error> for FileSystemError {
     fn from(error: std::io::Error) -> Self {
         match error.kind() {

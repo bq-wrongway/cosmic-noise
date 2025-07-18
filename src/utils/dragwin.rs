@@ -13,7 +13,7 @@ use iced::{
 
 use crate::{CosmicNoise, audio::AudioCommand, ui::components::toolbar};
 
-/// Window management messages for drag, resize, maximize, minimize, close
+// Window management messages for drag, resize, maximize, minimize, close
 #[derive(Debug, Clone)]
 pub enum WindowMessage {
     Drag,
@@ -30,7 +30,7 @@ pub enum WindowMessage {
     Close,
 }
 
-/// UI navigation messages for settings, navigation, theme changes
+// UI navigation messages for settings, navigation, theme changes
 #[derive(Debug, Clone)]
 pub enum UIMessage {
     Settings,
@@ -38,7 +38,7 @@ pub enum UIMessage {
     ThemeChanged(crate::models::AppTheme),
 }
 
-/// Combined message type that can handle all three message types
+// Combined message type that can handle all three message types
 #[derive(Debug, Clone)]
 pub enum Message {
     Window(WindowMessage),
@@ -49,35 +49,45 @@ pub enum Message {
 pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
     match message {
         Message::Window(window_msg) => match window_msg {
-            WindowMessage::Drag => window::get_latest().and_then(window::drag).map(Message::Window),
+            WindowMessage::Drag => window::get_latest()
+                .and_then(window::drag)
+                .map(Message::Window),
             WindowMessage::Maximize => {
                 println!("toggle!");
-                window::get_latest().and_then(window::toggle_maximize).map(Message::Window)
+                window::get_latest()
+                    .and_then(window::toggle_maximize)
+                    .map(Message::Window)
             }
-            WindowMessage::Minimize => {
-                window::get_latest().and_then(|id| window::minimize(id, true)).map(Message::Window)
-            }
-            WindowMessage::NorthWest => {
-                window::get_latest().and_then(|f| drag_resize(f, window::Direction::NorthWest)).map(Message::Window)
-            }
-            WindowMessage::North => {
-                window::get_latest().and_then(|f| drag_resize(f, window::Direction::North)).map(Message::Window)
-            }
-            WindowMessage::NorthEast => {
-                window::get_latest().and_then(|f| drag_resize(f, window::Direction::NorthEast)).map(Message::Window)
-            }
-            WindowMessage::West => window::get_latest().and_then(|f| drag_resize(f, window::Direction::West)).map(Message::Window),
-            WindowMessage::East => window::get_latest().and_then(|f| drag_resize(f, window::Direction::East)).map(Message::Window),
-            WindowMessage::South => {
-                window::get_latest().and_then(|f| drag_resize(f, window::Direction::South)).map(Message::Window)
-            }
-            WindowMessage::SouthWest => {
-                window::get_latest().and_then(|f| drag_resize(f, window::Direction::SouthWest)).map(Message::Window)
-            }
-            WindowMessage::SouthEast => {
-                window::get_latest().and_then(|f| drag_resize(f, window::Direction::SouthEast)).map(Message::Window)
-            }
-            WindowMessage::Close => window::get_latest().and_then(window::close).map(Message::Window),
+            WindowMessage::Minimize => window::get_latest()
+                .and_then(|id| window::minimize(id, true))
+                .map(Message::Window),
+            WindowMessage::NorthWest => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::NorthWest))
+                .map(Message::Window),
+            WindowMessage::North => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::North))
+                .map(Message::Window),
+            WindowMessage::NorthEast => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::NorthEast))
+                .map(Message::Window),
+            WindowMessage::West => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::West))
+                .map(Message::Window),
+            WindowMessage::East => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::East))
+                .map(Message::Window),
+            WindowMessage::South => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::South))
+                .map(Message::Window),
+            WindowMessage::SouthWest => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::SouthWest))
+                .map(Message::Window),
+            WindowMessage::SouthEast => window::get_latest()
+                .and_then(|f| drag_resize(f, window::Direction::SouthEast))
+                .map(Message::Window),
+            WindowMessage::Close => window::get_latest()
+                .and_then(window::close)
+                .map(Message::Window),
         },
         Message::Audio(audio_cmd) => {
             cnoise.process_audio_command(audio_cmd);
@@ -99,10 +109,10 @@ pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
 
                     // Save theme to configuration
                     if let Err(e) = crate::config::ConfigManager::save_theme(theme) {
-                        log::error!("Failed to save theme to configuration: {}", e);
+                        log::error!("Failed to save theme to configuration: {e}");
                         cnoise.error = Some(e);
                     } else {
-                        log::info!("Theme saved to configuration: {:?}", theme);
+                        log::info!("Theme saved to configuration: {theme}");
                     }
                 }
             }
@@ -111,12 +121,7 @@ pub fn update(message: Message, cnoise: &mut CosmicNoise) -> Task<Message> {
     }
 }
 
-pub fn view<'a>(
-    content: Element<'a, Message>,
-    cnoise: &CosmicNoise,
-    //doing this also does not work
-    // toolbar: Element<'a, crate::Message>,
-) -> Element<'a, Message> {
+pub fn view<'a>(content: Element<'a, Message>, cnoise: &CosmicNoise) -> Element<'a, Message> {
     let master_volume = cnoise.audio_system.master_volume();
 
     let base = iced::widget::container(
