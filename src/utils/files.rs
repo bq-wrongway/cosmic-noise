@@ -21,32 +21,6 @@ pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
     let mut seen = std::collections::HashSet::new();
     let mut any_dir_exists = false;
 
-    // Always check Flatpak bundled dir first
-    if let Some(flatpak_path) = get_flatpak_dir() {
-        if flatpak_path.exists() {
-            any_dir_exists = true;
-            for entry in walkdir::WalkDir::new(&flatpak_path)
-                .max_depth(1)
-                .follow_links(false)
-                .into_iter()
-            {
-                let entry = match entry {
-                    Ok(e) => e,
-                    Err(_) => return Err(AppError::FileSystem(FileSystemError::DirectoryReadError)),
-                };
-                let path = entry.path();
-                if path.is_file() {
-                    if !path.has_extension(SUPPORTED_EXTENSIONS) {
-                        return Err(AppError::FileSystem(FileSystemError::InvalidFileFormat));
-                    }
-                    let name = get_stem(path);
-                    if seen.insert(name.clone()) {
-                        tracks.push(NoiseTrack::new(name, path.to_path_buf()));
-                    }
-                }
-            }
-        }
-    }
     // Then check user data dir
     if let Some(data_path) = data_dir_exists() {
         if data_path.exists() {
@@ -107,14 +81,6 @@ pub async fn load_data() -> Result<Vec<NoiseTrack>, AppError> {
         }
     } else {
         Ok(tracks)
-    }
-}
-
-fn get_flatpak_dir() -> Option<PathBuf> {
-    if std::env::var("FLATPAK_SANDBOX_DIR").is_ok() {
-        Some(PathBuf::from("/app/share/cosmic-noise/sounds"))
-    } else {
-        None
     }
 }
 

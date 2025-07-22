@@ -7,14 +7,9 @@ An ambient noise player built with Rust and Iced, heavily inspired by Blanket.
 - 🎵 Multiple ambient sound tracks (rain, waves, birds, etc.)
 - 🎚️ Individual volume control for each track
 - 🎨 Multiple themes (Tokyo Night, Gruvbox, Catppuccin)
-- 📦 Flatpak packaging for easy installation
 - 🖥️ Cross-platform support
 
 ## Installation
-
-### Flatpak (Recommended)
-
-... to be added 
 
 ### From Source
 
