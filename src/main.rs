@@ -39,6 +39,7 @@ pub fn main() -> iced::Result {
             ..Default::default()
         })
         .theme(|app: &CosmicNoise| match app.current_theme {
+            AppTheme::Light => Theme::Light,
             AppTheme::GruvboxDark => Theme::GruvboxDark,
             AppTheme::Tokyo => Theme::TokyoNight,
             AppTheme::Catppuccin => Theme::CatppuccinMacchiato,

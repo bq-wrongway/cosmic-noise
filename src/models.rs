@@ -210,6 +210,7 @@ impl Default for UiSettings {
 // Available application themes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AppTheme {
+    Light,
     GruvboxLight,
     GruvboxDark,
     #[default]
@@ -222,6 +223,7 @@ impl AppTheme {
     // Get all available themes
     pub fn all() -> &'static [AppTheme] {
         &[
+            AppTheme::Light,
             AppTheme::GruvboxLight,
             AppTheme::GruvboxDark,
             AppTheme::Tokyo,
@@ -233,6 +235,7 @@ impl AppTheme {
     // Get theme display name
     pub fn display_name(&self) -> &'static str {
         match self {
+            AppTheme::Light => "Light",
             AppTheme::GruvboxLight => "Gruvbox Light",
             AppTheme::GruvboxDark => "Gruvbox Dark",
             AppTheme::Tokyo => "Tokyo Night",
