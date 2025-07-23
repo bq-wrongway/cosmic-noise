@@ -13,6 +13,7 @@ An ambient noise player built with Rust and Iced, heavily inspired by Blanket.
 -  Individual volume control for each track
 -  Multiple themes (Tokyo Night, Gruvbox, Catppuccin, and more to be added when UI settles in)
 -  Cross-platform support (works on mac, win and linux, though linux is main focus)
+-  Custom window controls (resizing and dragging) and toolbar
 
 ## Installation
 
