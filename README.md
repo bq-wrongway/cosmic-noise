@@ -7,6 +7,8 @@ Many thanks to iced, its creator and the amazing discord community.
 
 An ambient noise player built with Rust and Iced, heavily inspired by Blanket.
 
+The audio heavy lifting is done by [kira](https://github.com/tesselode/kira) library!
+
 ## Features
 
 -  Multiple ambient sound tracks (rain, waves, birds, etc. they are basically taken from Blanke, i will add later background tracks unique to this player)
