@@ -324,7 +324,7 @@ pub fn settings_view<'a>(current_theme: &crate::models::AppTheme) -> Element<'a,
         dragwin::Message::UI(dragwin::UIMessage::ThemeChanged(theme))
     });
 
-    let back_button = action(back_icon(), text(fl!("back")), Some(dragwin::Message::UI(dragwin::UIMessage::BackToPlayer)));
+    let back_button = action(back_icon(), text(fl!("back")).shaping(text::Shaping::Advanced), Some(dragwin::Message::UI(dragwin::UIMessage::BackToPlayer)));
 
     container(
         column![

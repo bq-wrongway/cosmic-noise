@@ -1,0 +1,11 @@
+app-title = Cosmic Noisez
+not-found = files not found in '$HOME/.local/share/cosmic-noise/sounds' or '$HOME/.config/cosmic-noise/sounds'
+error = Datei nicht gefunden
+pb-error = Wiedergabefehler
+stop-icon = Stop
+pause-all-icon = Pause
+play-all-icon = Play All
+close-icon = Close
+minimize-icon = Minimize
+maximize-icon = Maximize
+back = Zurück zum vorherigen Bildschirm
